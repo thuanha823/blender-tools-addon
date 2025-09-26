@@ -1,4 +1,5 @@
 import bpy
+from bpy.props import StringProperty, EnumProperty, FloatProperty
 
 # 1- Access every material on every object
 # Loop through all objects in scene, then loop through all material slots of each objects
@@ -13,9 +14,22 @@ import bpy
 # Swap any material with suffix to base material
 
 
-def Material_cleanup():
+def Material_cleanup(mode):
     delimiter = "."
-    for obj in bpy.context.scene.objects:
+    to_be_replaced = set()
+    total_replacements = 0
+    
+    if mode == 'All':
+        objects_to_process = bpy.context.scene.objects
+    elif mode == 'Selected':
+        objects_to_process = bpy.context.selected_objects
+    else:
+        return "Error: Invalid mode"
+    
+    for obj in objects_to_process:
+        if obj.type != 'MESH' or not obj.material_slots:
+            continue
+        
         for mat in obj.material_slots:
             current_mat = mat.name
             split_str = current_mat.split(delimiter)
@@ -28,10 +42,7 @@ def Material_cleanup():
             else:
                 print("No changes needed")
 
-        print(f"---{obj.name}---")
-        
-    return f"Replaced all materials to {base_mat_name}"
-        
+
 
 
 class MAT_OT_material_cleanup(bpy.types.Operator):
@@ -40,10 +51,27 @@ class MAT_OT_material_cleanup(bpy.types.Operator):
     bl_description = "Replaced any material with suffix with an existing base material"
     bl_options = {'REGISTER', 'UNDO'}
     
+    selection_mode: bpy.props.EnumProperty(
+        name="mode",
+        description="Choose what will be affected by the tool",
+        items=[
+            ('ALL', 'All', 'Clean up all objects in scene'),
+            ('SELECTED', 'Selected', 'Clean up only selected objects in scene')
+            ]
+        )
+    
     def execute(self, context):
-        Material_cleanup()
-        report_message = Material_cleanup()
-        self.report({'INFO'}, report_message)
+        mode = self.selection_mode
+        
+        if mode == "ALL":
+            Material_cleanup("All")
+            self.report({'INFO'}, "All scene objects")
+        elif mode == "SELECTED":
+            Material_cleanup("Selected")
+            self.report({'INFO'}, "Selected objects only")
+        else:
+            self.report({'INFO'}, "Error")
+            
         return{'FINISHED'}
     
 
@@ -57,7 +85,11 @@ class MAT_PT_material_cleanup(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         row = layout.row()
-        row.operator("material.mat_cleanup", text="Cleanup")
+        operation = row.operator("material.mat_cleanup", text="Cleanup - All")
+        operation.selection_mode = "ALL"
+        row = layout.row()
+        operation = row.operator("material.mat_cleanup", text="Cleanup - Selected")
+        operation.selection_mode = "SELECTED"
     
 
 classes = [
