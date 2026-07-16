@@ -28,11 +28,12 @@ class VIEW3D_OT_index_assign_selected(bpy.types.Operator):
     bl_description = "Assign a unique index to selected mesh"
     bl_options = {'REGISTER', 'UNDO'}
     
-    set_index: bpy.props.IntProperty(name = "Set Index", default = 0 )
+    set_index: bpy.props.IntProperty(name = "Set Index", default = 0)
+    auto_assign: bpy.props.BoolProperty(name = "Auto Assign", default = False)
         
     def execute(self, context):
         manager = AssignIndex()
-        manager.assign_selected(self.set_index)
+        manager.assign_selected(self.set_index, self.auto_assign)
         return {'FINISHED'}
     
     def invoke(self, context, event):
@@ -115,8 +116,6 @@ class VIEW3D_PT_index_assign(bpy.types.Panel):
         layout = self.layout
         
         layout.label(text="Index Assign")
-        # layout.prop(obj, "pass_index", text="Object Index")
-        # layout.separator()
     
         index_tool = layout.box()
         

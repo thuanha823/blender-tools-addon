@@ -5,6 +5,7 @@ import random
 class AssignIndex:
         
     max_index = 1400
+    used_index = []
 
     def assign_material(self):    
         """Assigns evenly distributed Pass Index values to all materials in the scene.  """
@@ -40,30 +41,39 @@ class AssignIndex:
 
 
 
-    def assign_selected(self, my_index):
+    def assign_selected(self, my_index, auto_assign = False):
             """Assigned a unique Pass Index values to selected objects"""
             
-            # Retrieve the number of selected objects
+            # Retrieve the number of selected mesh objects
+            mesh_objects = []
             selected_objects = bpy.context.selected_objects
-            obj_count = len(selected_objects)
+            for obj in selected_objects:
+                if obj.type == 'MESH':
+                    mesh_objects.append(obj)
+            obj_count = len(mesh_objects)
+       
+            if obj_count == 0:
+                print("No object selected")
+                return 
             
             print(f"{obj_count} Mesh object(s) selected")
             
-            if obj_count == 0:
-                print("No mesh selected")
-                return 
+            # Determine if user want manual input or randomly assign
+            if auto_assign:
+                pass_index = random.randint(1, self.max_index)
             else:
                 pass_index = my_index
-
-            for obj in selected_objects:
-                if obj.type in {'MESH'}:
-                    obj.pass_index = pass_index
-                    print(f"Object '{obj.name}': Pass Index = {pass_index}")
-                else:
-                    print("No mesh selected")
-                    return
             
-            print(f"---Success: Assigned Pass Index values of -{my_index}- to selected Mesh objects")
+            # Track which index has been used
+            if pass_index not in self.used_index:
+                 self.used_index.append(pass_index)
+            
+            # Assign index to selected 
+            for obj in mesh_objects:
+                obj.pass_index = pass_index
+                print(f"Object '{obj.name}': Pass Index = {pass_index}")  
+
+            print(f"---Success: Assigned Pass Index values of -{pass_index}- to {obj_count} selected Mesh object(s)")
 
 
 
@@ -97,7 +107,7 @@ class AssignIndex:
             obj.pass_index = pass_index
             print(f"Object '{obj.name}': Pass Index = {pass_index}")
                           
-        print(f"---Success: Assigned Pass Index value of -{my_index}- to {len(collection_obj)} Mesh objects in '{active_collection.name}'.")
+        print(f"---Success: Assigned Pass Index value of -{my_index}- to {len(collection_obj)} Mesh object(s) in '{active_collection.name}'.")
 
 
 
@@ -136,7 +146,7 @@ class AssignIndex:
             obj.pass_index = pass_index
             print(f"Object '{obj.name}': Pass Index = {pass_index}")
                 
-        print(f"---Success: Assigned randomize Pass Index values to {object_count} Mesh objects")
+        print(f"---Success: Assigned randomize Pass Index values to {object_count} Mesh object(s)")
         return object_count
     
     
@@ -144,10 +154,14 @@ class AssignIndex:
     def reset_index(self, object_reset=True, material_reset=True):
         """Clear all existing index value and reset to 0"""
         
+        if not object_reset and not material_reset:
+            return
+        
         # Gather all mesh objects into a list
         mesh_obj = []
         for obj in bpy.context.scene.objects:
-            mesh_obj.append(obj)  
+            if obj.type == 'MESH':
+                mesh_obj.append(obj)  
         object_count = len(mesh_obj)
         
         # Check if object count exceeds 1000
@@ -159,29 +173,40 @@ class AssignIndex:
             print("No objects found in the scene")
             return 0
         
-        # Calculate the step size for even distribution with random value, and offset count
-        step_size = 0
+        for obj in mesh_obj:
         
-        # Assign Pass Index values to each object
-        for i, obj in enumerate(mesh_obj):
-            i += 1
-            pass_index = (i * step_size)
-        
-            if object_reset == True:
+            '''
+            # Determine whether Objects and/or Materials are being reset
+            if object_reset == True and material_reset == False:
                 obj.pass_index = pass_index
-            elif material_reset == True:
+            elif object_reset == False and material_reset == True:
                 for slot in obj.material_slots:
                     if slot.material:
-                        slot.material.pass_index = pass_index              
-              
-        if object_reset == True and material_reset == True: 
-            print(f"---Successfully reset all Pass Index values to 0 for {object_count} Mesh objects")
-        elif object_reset == True and material_reset == False:  
-            print(f"---Successfully reset Object Pass Index values to 0 for {object_count} Mesh objects")
-        elif object_reset == False and material_reset == True:        
-            print(f"---Successfully reset Material Pass Index values to 0 for {object_count} Mesh objects")
-        
-        return object_count
+                        slot.material.pass_index = pass_index
+            elif object_reset == True and material_reset == True:
+                obj.pass_index = pass_index    
+                for slot in obj.material_slots:
+                    if slot.material:
+                        slot.material.pass_index = pass_index
+            '''
+            
+            # If object reset is True, do the object
+            if object_reset:
+                obj.pass_index = 0
+                
+            # If material reset is True, do the materials
+            if material_reset:
+                for slot in obj.material_slots:
+                    if slot.material:
+                        slot.material.pass_index = 0
+                
+        if object_reset and not material_reset:
+            print(f"---Success: Reset Object Pass Index values for {object_count} Mesh object(s).")
+        elif not object_reset and material_reset:
+            print(f"---Success: Reset Material Pass Index values for {object_count} Mesh object(s).")
+        else:
+            print(f"---Success: Reset all Pass Index values for {object_count} Mesh object(s).")
+
     
 
 
@@ -189,9 +214,8 @@ class AssignIndex:
 # Testing
 objects = AssignIndex()
 #objects.assign_material()
-#objects.assign_selected(30)
+#objects.assign_selected(my_index = None, auto_assign = True)
 #objects.assign_collection(250)
 #objects.assign_random()
 #objects.reset_index()
-
 
