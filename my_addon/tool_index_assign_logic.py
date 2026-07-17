@@ -177,34 +177,27 @@ class AssignIndex:
         # Handle edge case of no objects
         if object_count == 0:
             print("No objects found in the scene")
-            return 0
+            return
+        
+        # Create a set to remember which materials we've already fixed
+        processed_materials = set()
         
         for obj in mesh_obj:
-        
-            '''
-            # Determine whether Objects and/or Materials are being reset
-            if object_reset == True and material_reset == False:
-                obj.pass_index = pass_index
-            elif object_reset == False and material_reset == True:
-                for slot in obj.material_slots:
-                    if slot.material:
-                        slot.material.pass_index = pass_index
-            elif object_reset == True and material_reset == True:
-                obj.pass_index = pass_index    
-                for slot in obj.material_slots:
-                    if slot.material:
-                        slot.material.pass_index = pass_index
-            '''
-            
-            # If object reset is True, do the object
+            # Reset object index
             if object_reset:
                 obj.pass_index = 0
                 
-            # If material reset is True, do the materials
+            # Reset material index
             if material_reset:
                 for slot in obj.material_slots:
-                    if slot.material:
+                    # Check if there is a material AND if it hasn't been processed
+                    if slot.material and slot.material not in processed_materials:
                         slot.material.pass_index = 0
+                        processed_materials.add(slot.material)
+                        
+        # Empty your tracking list
+        if hasattr(self, 'used_index'):
+            self.used_index.clear()
                 
         if object_reset and not material_reset:
             print(f"---Success: Reset Object Pass Index values for {object_count} Mesh object(s).")
@@ -216,12 +209,11 @@ class AssignIndex:
     
 
 
-
-# Testing
+#Testing
 objects = AssignIndex()
 #objects.assign_material()
 #objects.assign_selected(my_index = None, auto_assign = True)
-#objects.assign_collection(250)
+#objects.assign_collection(my_index = None, auto_assign = True)
 #objects.assign_random()
 #objects.reset_index()
 
