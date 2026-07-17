@@ -5,7 +5,7 @@ import random
 class AssignIndex:
         
     max_index = 1400
-    used_index = []
+    used_index = set()
 
     def assign_material(self):    
         """Assigns evenly distributed Pass Index values to all materials in the scene.  """
@@ -64,9 +64,8 @@ class AssignIndex:
             else:
                 pass_index = my_index
             
-            # Track which index has been used
-            if pass_index not in self.used_index:
-                 self.used_index.append(pass_index)
+            # Add index to set
+            self.used_index.add(pass_index)
             
             # Assign index to selected 
             for obj in mesh_objects:
@@ -104,9 +103,8 @@ class AssignIndex:
         else:
             pass_index = my_index
         
-        # Track which index has been used
-        if pass_index not in self.used_index:
-            self.used_index.append(pass_index)
+        # Add index to set
+        self.used_index.add(pass_index)
         
         # Set index for objects inside active collection
         for obj in collection_obj:
@@ -196,8 +194,7 @@ class AssignIndex:
                         processed_materials.add(slot.material)
                         
         # Empty your tracking list
-        if hasattr(self, 'used_index'):
-            self.used_index.clear()
+        self.used_index.clear()
                 
         if object_reset and not material_reset:
             print(f"---Success: Reset Object Pass Index values for {object_count} Mesh object(s).")
