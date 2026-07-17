@@ -77,7 +77,7 @@ class AssignIndex:
 
 
 
-    def assign_collection(self, my_index):
+    def assign_collection(self, my_index, auto_assign = False):
         """Assigns a unique Pass Index value to all objects inside the active collection"""
         
         # Deselect any selection and search for active collection
@@ -88,7 +88,7 @@ class AssignIndex:
         collection_obj = []
         for obj in active_collection.objects:
             if obj.type == 'MESH':
-                obj.select_set(True)
+                # obj.select_set(True)
                 collection_obj.append(obj)
             else:
                 print(f"Skipped '{obj.name}': Not a mesh")
@@ -96,18 +96,24 @@ class AssignIndex:
         obj_count = len(collection_obj)
          
         if obj_count == 0:
-            print("No mesh selected")
+            print(f"No mesh object(s) found in collection '{active_collection.name}'.")
             return 
+        
+        if auto_assign:
+            pass_index = random.randint(1, self.max_index)
         else:
             pass_index = my_index
-            # pass_index = self.max_index // obj_count
+        
+        # Track which index has been used
+        if pass_index not in self.used_index:
+            self.used_index.append(pass_index)
         
         # Set index for objects inside active collection
         for obj in collection_obj:
             obj.pass_index = pass_index
             print(f"Object '{obj.name}': Pass Index = {pass_index}")
                           
-        print(f"---Success: Assigned Pass Index value of -{my_index}- to {len(collection_obj)} Mesh object(s) in '{active_collection.name}'.")
+        print(f"---Success: Assigned Pass Index value of -{pass_index}- to {obj_count} Mesh object(s) in '{active_collection.name}'.")
 
 
 

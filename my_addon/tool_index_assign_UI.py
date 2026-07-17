@@ -47,11 +47,12 @@ class VIEW3D_OT_index_assign_collection(bpy.types.Operator):
     bl_description = "Assign a unique index to active collection"
     bl_options = {'REGISTER', 'UNDO'}
        
-    set_index: bpy.props.IntProperty(name = "Set Index", default = 0 )   
+    set_index: bpy.props.IntProperty(name = "Set Index", default = 0)
+    auto_assign: bpy.props.BoolProperty(name = "Auto Assign", default = False)   
         
     def execute(self, context):
         manager = AssignIndex()
-        manager.assign_collection(self.set_index)
+        manager.assign_collection(self.set_index, self.auto_assign)
         return {'FINISHED'}
     
     def invoke(self, context, event):
