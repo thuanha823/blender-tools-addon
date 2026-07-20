@@ -26,7 +26,7 @@ class VIEW3D_OT_index_assign_selected(bpy.types.Operator):
     bl_idname = "index.assign_selected"
     bl_label = "Selected Objects"
     bl_description = "Assign a unique index to selected mesh"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER', 'UNDO'} # Add Undo support
     
     set_index: bpy.props.IntProperty(name = "Set Index", default = 0)
     auto_assign: bpy.props.BoolProperty(name = "Auto Assign", default = False)

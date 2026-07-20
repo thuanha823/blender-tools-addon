@@ -48,7 +48,7 @@ class AssignIndex:
             mesh_objects = []
             selected_objects = bpy.context.selected_objects
             for obj in selected_objects:
-                if obj.type == 'MESH':
+                if obj.type == 'MESH' and obj.library is None:
                     mesh_objects.append(obj)
             obj_count = len(mesh_objects)
        
@@ -75,7 +75,8 @@ class AssignIndex:
             print(f"---Success: Assigned Pass Index values of -{pass_index}- to {obj_count} selected Mesh object(s)")
 
 
-
+    # Issue - Doesn't work with hierarchy, child collection does not apply.
+    # Idea - Potentially auto distributing to all collection in scene
     def assign_collection(self, my_index, auto_assign = False):
         """Assigns a unique Pass Index value to all objects inside the active collection"""
         
@@ -86,7 +87,7 @@ class AssignIndex:
         # Gather all objects from active collection, skipping any that is not a mesh
         collection_obj = []
         for obj in active_collection.objects:
-            if obj.type == 'MESH':
+            if obj.type == 'MESH' and obj.library is None:
                 # obj.select_set(True)
                 collection_obj.append(obj)
             else:
@@ -114,14 +115,14 @@ class AssignIndex:
         print(f"---Success: Assigned Pass Index value of -{pass_index}- to {obj_count} Mesh object(s) in '{active_collection.name}'.")
 
 
-
+    # Issue - Could be better distributed, some mesh color blend together within close prox
     def assign_random(self):
         """Assigns evenly distributed random Pass Index values to all objects in the Blender scene."""
         
         # Gather all mesh objects into a list
         mesh_obj = []
         for obj in bpy.context.scene.objects:
-            if obj.type in {'MESH'}:
+            if obj.type == 'MESH' and obj.library is None:
                 mesh_obj.append(obj)
                 
         object_count = len(mesh_obj)
@@ -164,7 +165,7 @@ class AssignIndex:
         # Gather all mesh objects into a list
         mesh_obj = []
         for obj in bpy.context.scene.objects:
-            if obj.type == 'MESH':
+            if obj.type == 'MESH' and obj.library is None:
                 mesh_obj.append(obj)  
         object_count = len(mesh_obj)
         
