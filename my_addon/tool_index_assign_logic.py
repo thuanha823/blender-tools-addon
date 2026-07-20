@@ -75,28 +75,35 @@ class AssignIndex:
             print(f"---Success: Assigned Pass Index values of -{pass_index}- to {obj_count} selected Mesh object(s)")
 
 
-    # Issue - Doesn't work with hierarchy, child collection does not apply.
+
     # Idea - Potentially auto distributing to all collection in scene
-    def assign_collection(self, my_index, auto_assign = False):
+    def assign_collection(self, my_index, auto_assign = False, affect_child = True):
         """Assigns a unique Pass Index value to all objects inside the active collection"""
         
         # Deselect any selection and search for active collection
         bpy.ops.object.select_all(action='DESELECT')
         active_collection = bpy.context.view_layer.active_layer_collection.collection
         
-        # Gather all objects from active collection, skipping any that is not a mesh
-        collection_obj = []
-        for obj in active_collection.objects:
-            if obj.type == 'MESH' and obj.library is None:
-                # obj.select_set(True)
-                collection_obj.append(obj)
-            else:
-                print(f"Skipped '{obj.name}': Not a mesh")
-            
+        # Create a set to track all mesh objects within the active collections
+        collection_obj = set()
+        if affect_child:
+            for obj in active_collection.all_objects:
+                if obj.type == 'MESH' and obj.library is None:
+                    # obj.select_set(True) # Testing
+                    collection_obj.add(obj)
+                else:
+                    print(f"Skipped '{obj.name}': Not a mesh")
+        else:
+            for obj in active_collection.objects:
+                if obj.type == 'MESH' and obj.library is None:
+                    # obj.select_set(True) # Testing
+                    collection_obj.add(obj)
+                else:
+                    print(f"Skipped '{obj.name}': Not a mesh")
+                   
         obj_count = len(collection_obj)
-         
         if obj_count == 0:
-            print(f"No mesh object(s) found in collection '{active_collection.name}'.")
+            print(f"No mesh object(s) found in collection '{active_collection.name}' Collection.")
             return 
         
         if auto_assign:
@@ -112,7 +119,7 @@ class AssignIndex:
             obj.pass_index = pass_index
             print(f"Object '{obj.name}': Pass Index = {pass_index}")
                           
-        print(f"---Success: Assigned Pass Index value of -{pass_index}- to {obj_count} Mesh object(s) in '{active_collection.name}'.")
+        print(f"---Success: Assigned Pass Index value of -{pass_index}- to {obj_count} Mesh object(s) in '{active_collection.name}' Collection.")
 
 
     # Issue - Could be better distributed, some mesh color blend together within close prox

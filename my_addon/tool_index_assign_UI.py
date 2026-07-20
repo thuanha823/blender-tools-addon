@@ -29,7 +29,7 @@ class VIEW3D_OT_index_assign_selected(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'} # Add Undo support
     
     set_index: bpy.props.IntProperty(name = "Set Index", default = 0)
-    auto_assign: bpy.props.BoolProperty(name = "Auto Assign", default = False)
+    auto_assign: bpy.props.BoolProperty(name = "Auto Assign", default = True)
         
     def execute(self, context):
         manager = AssignIndex()
@@ -48,11 +48,12 @@ class VIEW3D_OT_index_assign_collection(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
        
     set_index: bpy.props.IntProperty(name = "Set Index", default = 0)
-    auto_assign: bpy.props.BoolProperty(name = "Auto Assign", default = False)   
+    auto_assign: bpy.props.BoolProperty(name = "Auto Assign", default = True)   
+    affect_child: bpy.props.BoolProperty(name = "Affect Child Collection", default = True) 
         
     def execute(self, context):
         manager = AssignIndex()
-        manager.assign_collection(self.set_index, self.auto_assign)
+        manager.assign_collection(self.set_index, self.auto_assign, self.affect_child)
         return {'FINISHED'}
     
     def invoke(self, context, event):
