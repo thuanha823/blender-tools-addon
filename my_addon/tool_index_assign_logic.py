@@ -145,16 +145,11 @@ class AssignIndex:
             print("No objects found in the scene")
             return 0
         
-        # Calculate the step size for even distribution with random value, and offset count
-        if object_count == 1:
-            step_size = 0
-        else:
-            step_size = random.randint(1, self.max_index) // (object_count + 1)
+        # Create a list of entirely unique, non-sequential random integers based on amount of objects in scene
+        random_indices = random.sample(range(1, self.max_index + 1), object_count)
         
-        # Assign Pass Index values to each object
-        for i, obj in enumerate(mesh_obj):
-            i += 1
-            pass_index = (i * step_size)
+        # Pairs each object with one of the random indices
+        for obj, pass_index in zip(mesh_obj, random_indices):
             obj.pass_index = pass_index
             print(f"Object '{obj.name}': Pass Index = {pass_index}")
                 
@@ -162,7 +157,7 @@ class AssignIndex:
         return object_count
     
     
-    
+    # Ideas - Reset selected objects/ collection only
     def reset_index(self, object_reset=True, material_reset=True):
         """Clear all existing index value and reset to 0"""
         
