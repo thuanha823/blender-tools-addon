@@ -74,35 +74,79 @@ class VIEW3D_OT_index_assign_random(bpy.types.Operator):
     
     
 
-class VIEW3D_OT_index_reset(bpy.types.Operator):
-    bl_idname = "index.reset"
+class VIEW3D_OT_index_reset_scene(bpy.types.Operator):
+    bl_idname = "index.reset_scene"
     bl_label = "Reset"
     bl_description = "Reset index of objects and/or materials"
     bl_options = {'REGISTER', 'UNDO'}
     
-    object_reset: bpy.props.BoolProperty(default=True)
-    material_reset: bpy.props.BoolProperty(default=True)
+    object_reset: bpy.props.BoolProperty(name = "Object Index", default=True)
+    material_reset: bpy.props.BoolProperty(name = "Material Index", default=True)
+    target_mode: bpy.props.StringProperty(default='Scene')
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "object_reset", toggle=True, icon='MESH_DATA')
+        layout.prop(self, "material_reset", toggle=True, icon='MATERIAL')
        
     def execute(self, context):
         manager = AssignIndex()
-        manager.reset_index(self.object_reset, self.material_reset)
+        manager.reset_index(self.object_reset, self.material_reset, self.target_mode)
         return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
 
 
-'''
-# Parent panel
-class VIEW3D_PT_parent_panel(bpy.types.Panel):
-    bl_label = "Parent Panel"
-    bl_idname = "VIEW3D_PT_parent_panel"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = 'Custom'
-
+class VIEW3D_OT_index_reset_selected(bpy.types.Operator):
+    bl_idname = "index.reset_selected"
+    bl_label = "Reset"
+    bl_description = "Reset index of objects and/or materials"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    object_reset: bpy.props.BoolProperty(name = "Object Index", default=True)
+    material_reset: bpy.props.BoolProperty(name = "Material Index", default=True)
+    target_mode: bpy.props.StringProperty(default='Selected')
+    
     def draw(self, context):
         layout = self.layout
-        layout.label(text="This is the main panel.")
-'''        
+        layout.prop(self, "object_reset", toggle=True, icon='MESH_DATA')
+        layout.prop(self, "material_reset", toggle=True, icon='MATERIAL')
+       
+    def execute(self, context):
+        manager = AssignIndex()
+        manager.reset_index(self.object_reset, self.material_reset, self.target_mode)
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+    
+    
+    
+class VIEW3D_OT_index_reset_collection(bpy.types.Operator):
+    bl_idname = "index.reset_collection"
+    bl_label = "Reset"
+    bl_description = "Reset index of objects and/or materials"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    object_reset: bpy.props.BoolProperty(name = "Object Index", default=True)
+    material_reset: bpy.props.BoolProperty(name = "Material Index", default=True)
+    target_mode: bpy.props.StringProperty(default='Collection')
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "object_reset", toggle=True, icon='MESH_DATA')
+        layout.prop(self, "material_reset", toggle=True, icon='MATERIAL')
+       
+    def execute(self, context):
+        manager = AssignIndex()
+        manager.reset_index(self.object_reset, self.material_reset, self.target_mode)
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+       
         
 
 
@@ -112,7 +156,6 @@ class VIEW3D_PT_index_assign(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Custom"
-    # bl_parent_id = "VIEW3D_PT_parent_panel" 
     
     def draw(self, context):
         layout = self.layout
@@ -132,9 +175,11 @@ class VIEW3D_PT_index_assign(bpy.types.Panel):
         index_tool.separator(type='LINE')
         
         index_tool.label(text="Reset", icon='PRESET')
-        btn_all = index_tool.operator("index.reset", icon='LOOP_BACK', text="All Pass Index")
+        
+        btn_all = index_tool.operator("index.reset_scene", icon='LOOP_BACK', text="All Pass Index")
         btn_all.object_reset = True
         btn_all.material_reset = True
+        '''
         row = index_tool.row()
         btn_obj = row.operator("index.reset", icon='LOOP_BACK', text="Object Index")
         btn_obj.object_reset = True
@@ -142,6 +187,11 @@ class VIEW3D_PT_index_assign(bpy.types.Panel):
         btn_mtrl = row.operator("index.reset", icon='LOOP_BACK', text="Material Index")
         btn_mtrl.object_reset = False
         btn_mtrl.material_reset = True
+        index_tool.separator(type='LINE')
+        '''
+        
+        btn_all = index_tool.operator("index.reset_selected", icon='LOOP_BACK', text="Selected Objects")
+        btn_all = index_tool.operator("index.reset_collection", icon='LOOP_BACK', text="Active Collection")
         
         
     
@@ -150,7 +200,9 @@ classes = [
             VIEW3D_OT_index_assign_selected,
             VIEW3D_OT_index_assign_collection,
             VIEW3D_OT_index_assign_random,
-            VIEW3D_OT_index_reset,
+            VIEW3D_OT_index_reset_scene,
+            VIEW3D_OT_index_reset_selected,
+            VIEW3D_OT_index_reset_collection,
             VIEW3D_PT_index_assign
             ]  
   

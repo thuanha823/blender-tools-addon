@@ -158,7 +158,7 @@ class AssignIndex:
     
     
     # Ideas - Reset selected objects/ collection only
-    def reset_index(self, object_reset=True, material_reset=True):
+    def reset_index(self, object_reset=True, material_reset=True, target_mode=''):
         """Clear all existing index value and reset to 0"""
         
         if not object_reset and not material_reset:
@@ -166,9 +166,23 @@ class AssignIndex:
         
         # Gather all mesh objects into a list
         mesh_obj = []
-        for obj in bpy.context.scene.objects:
-            if obj.type == 'MESH' and obj.library is None:
-                mesh_obj.append(obj)  
+        
+        # Control how objects data are gather
+        if target_mode == 'Scene':
+            for obj in bpy.context.scene.objects:
+                if obj.type == 'MESH' and obj.library is None:
+                    mesh_obj.append(obj)  
+        elif target_mode == 'Selected':
+            selected_objects = bpy.context.selected_objects
+            for obj in selected_objects:
+                if obj.type == 'MESH' and obj.library is None:
+                    mesh_obj.append(obj)  
+        elif target_mode == 'Collection':
+            active_collection = bpy.context.view_layer.active_layer_collection.collection
+            for obj in active_collection.all_objects:
+                if obj.type == 'MESH' and obj.library is None:
+                    mesh_obj.append(obj)  
+            
         object_count = len(mesh_obj)
         
         # Check if object count exceeds 1000
@@ -198,19 +212,27 @@ class AssignIndex:
                         
         # Empty your tracking list
         self.used_index.clear()
-                
-        if object_reset and not material_reset:
-            print(f"---Success: Reset Object Pass Index values for {object_count} Mesh object(s).")
-        elif not object_reset and material_reset:
-            print(f"---Success: Reset Material Pass Index values for {object_count} Mesh object(s).")
-        else:
-            print(f"---Success: Reset all Pass Index values for {object_count} Mesh object(s).")
 
+        if object_reset and not material_reset:
+            index_select = 'Object'
+        elif not object_reset and material_reset:
+            index_select = 'Material'
+        elif object_reset and material_reset:
+            index_select = 'Object and Material'
+            
+        if target_mode == 'Scene':
+            target = 'scene'
+        elif target_mode == 'Selected':
+            target = 'selection'
+        elif target_mode == 'Collection':
+            target = 'active collection ' + f'"{str(active_collection.name)}"'
+                   
+        print(f"---Success: Reset {index_select} index for {object_count} Mesh Object(s) in {target}")
     
 
 
 #Testing
-objects = AssignIndex()
+#objects = AssignIndex()
 #objects.assign_material()
 #objects.assign_selected(my_index = None, auto_assign = True)
 #objects.assign_collection(my_index = None, auto_assign = True)
