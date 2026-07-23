@@ -18,6 +18,9 @@ class VIEW3D_OT_index_assign_materials(bpy.types.Operator):
     def execute(self, context):
         manager = AssignIndex()
         manager.assign_material()
+        
+        material_count = manager.assign_material()
+        self.report({'INFO'}, f"Index assigned to {material_count} material(s) in scene")
         return {'FINISHED'}
     
     
@@ -34,6 +37,9 @@ class VIEW3D_OT_index_assign_selected(bpy.types.Operator):
     def execute(self, context):
         manager = AssignIndex()
         manager.assign_selected(self.set_index, self.auto_assign)
+        
+        obj_count = manager.assign_selected(self.set_index, self.auto_assign)
+        self.report({'INFO'}, f"Index assigned to {obj_count} selected object(s)")
         return {'FINISHED'}
     
     def invoke(self, context, event):
@@ -54,6 +60,9 @@ class VIEW3D_OT_index_assign_collection(bpy.types.Operator):
     def execute(self, context):
         manager = AssignIndex()
         manager.assign_collection(self.set_index, self.auto_assign, self.affect_child)
+        
+        active_collection = manager.assign_collection(self.set_index, self.auto_assign, self.affect_child)
+        self.report({'INFO'}, f"Index assigned to '{active_collection.name}' collection")
         return {'FINISHED'}
     
     def invoke(self, context, event):
@@ -70,6 +79,9 @@ class VIEW3D_OT_index_assign_random(bpy.types.Operator):
     def execute(self, context):
         manager = AssignIndex()
         manager.assign_random()
+        
+        obj_count = manager.assign_random()
+        self.report({'INFO'}, f"Random Index assigned to {obj_count} object(s)")
         return {'FINISHED'}
     
     
@@ -77,7 +89,7 @@ class VIEW3D_OT_index_assign_random(bpy.types.Operator):
 class VIEW3D_OT_index_reset_scene(bpy.types.Operator):
     bl_idname = "index.reset_scene"
     bl_label = "Reset"
-    bl_description = "Reset index of objects and/or materials"
+    bl_description = "Reset index of scene objects and/or materials"
     bl_options = {'REGISTER', 'UNDO'}
     
     object_reset: bpy.props.BoolProperty(name = "Object Index", default=True)
@@ -92,6 +104,7 @@ class VIEW3D_OT_index_reset_scene(bpy.types.Operator):
     def execute(self, context):
         manager = AssignIndex()
         manager.reset_index(self.object_reset, self.material_reset, self.target_mode)
+        self.report({'INFO'}, "Index reset to 0")
         return {'FINISHED'}
     
     def invoke(self, context, event):
@@ -102,7 +115,7 @@ class VIEW3D_OT_index_reset_scene(bpy.types.Operator):
 class VIEW3D_OT_index_reset_selected(bpy.types.Operator):
     bl_idname = "index.reset_selected"
     bl_label = "Reset"
-    bl_description = "Reset index of objects and/or materials"
+    bl_description = "Reset index of selected objects and/or materials"
     bl_options = {'REGISTER', 'UNDO'}
     
     object_reset: bpy.props.BoolProperty(name = "Object Index", default=True)
@@ -127,11 +140,11 @@ class VIEW3D_OT_index_reset_selected(bpy.types.Operator):
 class VIEW3D_OT_index_reset_collection(bpy.types.Operator):
     bl_idname = "index.reset_collection"
     bl_label = "Reset"
-    bl_description = "Reset index of objects and/or materials"
+    bl_description = "Reset index of objects and/or materials in active collection"
     bl_options = {'REGISTER', 'UNDO'}
     
-    object_reset: bpy.props.BoolProperty(name = "Object Index", default=True)
-    material_reset: bpy.props.BoolProperty(name = "Material Index", default=True)
+    object_reset: bpy.props.BoolProperty(name="Object Index", default=True)
+    material_reset: bpy.props.BoolProperty(name="Material Index", default=True)
     target_mode: bpy.props.StringProperty(default='Collection')
     
     def draw(self, context):
@@ -149,7 +162,6 @@ class VIEW3D_OT_index_reset_collection(bpy.types.Operator):
        
         
 
-
 class VIEW3D_PT_index_assign(bpy.types.Panel):
     bl_label = "Protex Tools"
     bl_idname = "VIEW3D_PT_index_assign"
@@ -161,7 +173,6 @@ class VIEW3D_PT_index_assign(bpy.types.Panel):
         layout = self.layout
         
         layout.label(text="Index Assign")
-    
         index_tool = layout.box()
         
         index_tool.label(text="Material Index", icon='TOOL_SETTINGS')
@@ -174,22 +185,8 @@ class VIEW3D_PT_index_assign(bpy.types.Panel):
         index_tool.operator("index.assign_random", icon='CON_TRANSFORM_CACHE', text="Randomize")
         index_tool.separator(type='LINE')
         
-        index_tool.label(text="Reset", icon='PRESET')
-        
+        index_tool.label(text="Reset", icon='PRESET')  
         btn_all = index_tool.operator("index.reset_scene", icon='LOOP_BACK', text="All Pass Index")
-        btn_all.object_reset = True
-        btn_all.material_reset = True
-        '''
-        row = index_tool.row()
-        btn_obj = row.operator("index.reset", icon='LOOP_BACK', text="Object Index")
-        btn_obj.object_reset = True
-        btn_obj.material_reset = False
-        btn_mtrl = row.operator("index.reset", icon='LOOP_BACK', text="Material Index")
-        btn_mtrl.object_reset = False
-        btn_mtrl.material_reset = True
-        index_tool.separator(type='LINE')
-        '''
-        
         btn_all = index_tool.operator("index.reset_selected", icon='LOOP_BACK', text="Selected Objects")
         btn_all = index_tool.operator("index.reset_collection", icon='LOOP_BACK', text="Active Collection")
         

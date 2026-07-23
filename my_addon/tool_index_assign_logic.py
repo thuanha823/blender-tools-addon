@@ -54,7 +54,7 @@ class AssignIndex:
        
             if obj_count == 0:
                 print("No object selected")
-                return 
+                return 0
             
             print(f"{obj_count} Mesh object(s) selected")
             
@@ -73,7 +73,7 @@ class AssignIndex:
                 print(f"Object '{obj.name}': Pass Index = {pass_index}")  
 
             print(f"---Success: Assigned Pass Index values of -{pass_index}- to {obj_count} selected Mesh object(s)")
-
+            return obj_count
 
 
     # Idea - Potentially auto distributing to all collection in scene
@@ -120,9 +120,10 @@ class AssignIndex:
             print(f"Object '{obj.name}': Pass Index = {pass_index}")
                           
         print(f"---Success: Assigned Pass Index value of -{pass_index}- to {obj_count} Mesh object(s) in '{active_collection.name}' Collection.")
+        return active_collection
 
 
-    # Issue - Could be better distributed, some mesh color blend together within close prox
+
     def assign_random(self):
         """Assigns evenly distributed random Pass Index values to all objects in the Blender scene."""
         
@@ -132,29 +133,29 @@ class AssignIndex:
             if obj.type == 'MESH' and obj.library is None:
                 mesh_obj.append(obj)
                 
-        object_count = len(mesh_obj)
+        obj_count = len(mesh_obj)
         
-        print(f"Found {object_count} Mesh objects in the scene")
+        print(f"Found {obj_count} Mesh objects in the scene")
         
         # Check if object count exceeds 1000
-        if object_count > self.max_index:
-            raise ValueError(f"Object count ({object_count}) exceeds maximum limit of 1000")
+        if obj_count > self.max_index:
+            raise ValueError(f"Object count ({obj_count}) exceeds maximum limit of 1000")
         
         # Handle edge case of no objects
-        if object_count == 0:
+        if obj_count == 0:
             print("No objects found in the scene")
             return 0
         
         # Create a list of entirely unique, non-sequential random integers based on amount of objects in scene
-        random_indices = random.sample(range(1, self.max_index + 1), object_count)
+        random_indices = random.sample(range(1, self.max_index + 1), obj_count)
         
         # Pairs each object with one of the random indices
         for obj, pass_index in zip(mesh_obj, random_indices):
             obj.pass_index = pass_index
             print(f"Object '{obj.name}': Pass Index = {pass_index}")
                 
-        print(f"---Success: Assigned randomize Pass Index values to {object_count} Mesh object(s)")
-        return object_count
+        print(f"---Success: Assigned randomize Pass Index values to {obj_count} Mesh object(s)")
+        return obj_count
     
     
     # Ideas - Reset selected objects/ collection only
@@ -183,14 +184,14 @@ class AssignIndex:
                 if obj.type == 'MESH' and obj.library is None:
                     mesh_obj.append(obj)  
             
-        object_count = len(mesh_obj)
+        obj_count = len(mesh_obj)
         
         # Check if object count exceeds 1000
-        if object_count > self.max_index:
-            raise ValueError(f"Object count ({object_count}) exceeds maximum limit of 1000")
+        if obj_count > self.max_index:
+            raise ValueError(f"Object count ({obj_count}) exceeds maximum limit of 1000")
         
         # Handle edge case of no objects
-        if object_count == 0:
+        if obj_count == 0:
             print("No objects found in the scene")
             return
         
@@ -227,7 +228,7 @@ class AssignIndex:
         elif target_mode == 'Collection':
             target = 'active collection ' + f'"{str(active_collection.name)}"'
                    
-        print(f"---Success: Reset {index_select} index for {object_count} Mesh Object(s) in {target}")
+        print(f"---Success: Reset {index_select} index for {obj_count} Mesh Object(s) in {target}")
     
 
 
