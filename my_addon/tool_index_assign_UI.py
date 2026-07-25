@@ -25,28 +25,86 @@ class VIEW3D_OT_index_assign_materials(bpy.types.Operator):
     
     
     
-class VIEW3D_OT_index_assign_selected(bpy.types.Operator):
-    bl_idname = "index.assign_selected"
-    bl_label = "Selected Objects"
-    bl_description = "Assign a unique index to selected mesh"
+class VIEW3D_OT_index_assign_objects(bpy.types.Operator):
+    bl_idname = "index.assign_objects"
+    bl_label = "Pass Index Assign"
+    bl_description = "Assign pass index to objects"
     bl_options = {'REGISTER', 'UNDO'} # Add Undo support
     
-    set_index: bpy.props.IntProperty(name = "Set Index", default = 0)
-    auto_assign: bpy.props.BoolProperty(name = "Auto Assign", default = True)
+    # Properties being used
+    set_index: bpy.props.IntProperty(
+        name="Set Index",
+        description = "Apply custom index", 
+        min=0, 
+        default=0
+    )
+    auto_assign: bpy.props.BoolProperty(
+        name="Auto", 
+        description="Automatically assigned a random index",
+        default = True
+    )
+    affect_child: bpy.props.BoolProperty(
+        name="Include Child Collection",
+        description="Determine whether objects inside children collection will be affected or not", 
+        default=True
+    ) 
+    select_mode : bpy.props.EnumProperty(
+        name = "Select Mode",
+        description = "Target mode",
+        items = [ 
+            ('SELECTED', "Selection", "New index for objects in selection"),
+            ('COLLECTION', "Active Collection", "New index for objects in active collection"),
+            ('RANDOM', "Random", "Randomly assign all objects a unique index"),
+        ]
+    )
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Select your target:")
+        layout.prop(self, "select_mode", icon='MATERIAL', expand=True)
+        layout.separator(type='LINE')
         
+        # Only bring up this menu if in 'COLLECTION' mode
+        if self.select_mode == 'COLLECTION':
+            layout.prop(self, "affect_child", icon='CON_CHILDOF', expand=True)
+        
+        # Bring up extra setting for manual input, or random input if not in 'RANDOM' mode
+        if self.select_mode != 'RANDOM':
+            auto_button = layout.split(factor=0.3)
+            auto_button.prop(self, "auto_assign", icon='MATERIAL', toggle=False)
+            index_button = auto_button.row()
+            
+            # Only one options can be enabled at a time
+            index_button.enabled = not self.auto_assign
+            index_button.prop(self, "set_index", text="Custom Index", icon='MATERIAL')
+        layout.separator(type='LINE')
+            
+        layout.scale_y = 1.1
+             
     def execute(self, context):
         manager = AssignIndex()
-        manager.assign_selected(self.set_index, self.auto_assign)
+        if self.select_mode == 'SELECTED':
+            manager.assign_selected(self.set_index, self.auto_assign)
+            obj_count = manager.assign_selected(self.set_index, self.auto_assign)
+            self.report({'INFO'}, f"Index assigned to {obj_count} selected object(s)")
+            
+        if self.select_mode == 'COLLECTION':
+            manager.assign_collection(self.set_index, self.auto_assign, self.affect_child)
+            active_collection = manager.assign_collection(self.set_index, self.auto_assign)
+            self.report({'INFO'}, f"Index assigned to '{active_collection.name}' collection")
+            
+        if self.select_mode == 'RANDOM':
+            manager.assign_random()
+            obj_count = manager.assign_random()
+            self.report({'INFO'}, f"Random Index assigned to {obj_count} object(s)")
         
-        obj_count = manager.assign_selected(self.set_index, self.auto_assign)
-        self.report({'INFO'}, f"Index assigned to {obj_count} selected object(s)")
         return {'FINISHED'}
     
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
 
-
+'''
 class VIEW3D_OT_index_assign_collection(bpy.types.Operator):
     bl_idname = "index.assign_collection"
     bl_label = "Active Collection"
@@ -83,7 +141,7 @@ class VIEW3D_OT_index_assign_random(bpy.types.Operator):
         obj_count = manager.assign_random()
         self.report({'INFO'}, f"Random Index assigned to {obj_count} object(s)")
         return {'FINISHED'}
-    
+'''    
     
 
 class VIEW3D_OT_index_reset_scene(bpy.types.Operator):
@@ -162,6 +220,8 @@ class VIEW3D_OT_index_reset_collection(bpy.types.Operator):
        
         
 
+
+
 class VIEW3D_PT_index_assign(bpy.types.Panel):
     bl_label = "Protex Tools"
     bl_idname = "VIEW3D_PT_index_assign"
@@ -175,15 +235,15 @@ class VIEW3D_PT_index_assign(bpy.types.Panel):
         layout.label(text="Index Assign")
         index_tool = layout.box()
         
-        index_tool.label(text="Material Index", icon='TOOL_SETTINGS')
+        index_tool.label(text="Index", icon='TOOL_SETTINGS')
         index_tool.operator("index.assign_materials", icon='MATERIAL_DATA', text="Materials")
-        index_tool.separator(type='LINE')
+        #index_tool.separator(type='LINE')
         
-        index_tool.label(text="Object Index", icon='TOOL_SETTINGS')
-        index_tool.operator("index.assign_selected", icon='SELECT_SUBTRACT', text="Selected Objects")
-        index_tool.operator("index.assign_collection", icon='OUTLINER_COLLECTION', text="Active Collection")
-        index_tool.operator("index.assign_random", icon='CON_TRANSFORM_CACHE', text="Randomize")
-        index_tool.separator(type='LINE')
+        #index_tool.label(text="Object Index", icon='TOOL_SETTINGS')
+        index_tool.operator("index.assign_selected", icon='SELECT_SUBTRACT', text="Objects")
+        #index_tool.operator("index.assign_collection", icon='OUTLINER_COLLECTION', text="Active Collection")
+        #index_tool.operator("index.assign_random", icon='CON_TRANSFORM_CACHE', text="Randomize")
+        #index_tool.separator(type='LINE')
         
         index_tool.label(text="Reset", icon='PRESET')  
         btn_all = index_tool.operator("index.reset_scene", icon='LOOP_BACK', text="All Pass Index")
@@ -194,9 +254,9 @@ class VIEW3D_PT_index_assign(bpy.types.Panel):
     
 classes = [
             VIEW3D_OT_index_assign_materials,
-            VIEW3D_OT_index_assign_selected,
-            VIEW3D_OT_index_assign_collection,
-            VIEW3D_OT_index_assign_random,
+            VIEW3D_OT_index_assign_objects,
+            #VIEW3D_OT_index_assign_collection,
+            #VIEW3D_OT_index_assign_random,
             VIEW3D_OT_index_reset_scene,
             VIEW3D_OT_index_reset_selected,
             VIEW3D_OT_index_reset_collection,
