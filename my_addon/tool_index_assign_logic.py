@@ -8,7 +8,7 @@ class AssignIndex:
     used_index = set()
 
     def assign_material(self):    
-        """Assigns evenly distributed Pass Index values to all materials in the scene.  """
+        """Assigns evenly distributed Pass Index values to all materials in the scene."""
             
         materials = bpy.data.materials
         material_count = len(materials)
@@ -120,7 +120,7 @@ class AssignIndex:
             print(f"Object '{obj.name}': Pass Index = {pass_index}")
                           
         print(f"---Success: Assigned Pass Index value of -{pass_index}- to {obj_count} Mesh object(s) in '{active_collection.name}' Collection.")
-        return active_collection
+        return active_collection, obj_count
 
 
 
@@ -158,6 +158,7 @@ class AssignIndex:
         return obj_count
     
     
+    
     # Ideas - Reset selected objects/ collection only
     def reset_index(self, object_reset=True, material_reset=True, target_mode=''):
         """Clear all existing index value and reset to 0"""
@@ -167,6 +168,9 @@ class AssignIndex:
         
         # Gather all mesh objects into a list
         mesh_obj = []
+        
+        # Placeholder for potential collection info
+        active_collection = None
         
         # Control how objects data are gather
         if target_mode == 'Scene':
@@ -182,7 +186,7 @@ class AssignIndex:
             active_collection = bpy.context.view_layer.active_layer_collection.collection
             for obj in active_collection.all_objects:
                 if obj.type == 'MESH' and obj.library is None:
-                    mesh_obj.append(obj)  
+                    mesh_obj.append(obj)
             
         obj_count = len(mesh_obj)
         
@@ -193,7 +197,7 @@ class AssignIndex:
         # Handle edge case of no objects
         if obj_count == 0:
             print("No objects found in the scene")
-            return
+            return None, 0
         
         # Create a set to remember which materials we've already fixed
         processed_materials = set()
@@ -229,6 +233,8 @@ class AssignIndex:
             target = 'active collection ' + f'"{str(active_collection.name)}"'
                    
         print(f"---Success: Reset {index_select} index for {obj_count} Mesh Object(s) in {target}")
+        return active_collection, obj_count
+
     
 
 

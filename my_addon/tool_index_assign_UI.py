@@ -9,8 +9,10 @@ AssignIndex = logic_module.AssignIndex
 
 
 
-class VIEW3D_OT_index_assign_materials(bpy.types.Operator):
-    bl_idname = "index.assign_materials"
+class ProtexIndexAssignMaterials(bpy.types.Operator):
+    """Iterate through all objects in scene and evenly distribute and assign a unique index value"""
+    
+    bl_idname = "protex.index_materials"
     bl_label = "Materials"
     bl_description = "Assign each material a unique index"
     bl_options = {'REGISTER', 'UNDO'}
@@ -25,28 +27,31 @@ class VIEW3D_OT_index_assign_materials(bpy.types.Operator):
     
     
     
-class VIEW3D_OT_index_assign_objects(bpy.types.Operator):
-    bl_idname = "index.assign_objects"
-    bl_label = "Pass Index Assign"
-    bl_description = "Assign pass index to objects"
-    bl_options = {'REGISTER', 'UNDO'} # Add Undo support
+    
+class ProtexIndexAssignObjects(bpy.types.Operator):
+    """Assign each objects a random or custom index based on various selection method"""
+    
+    bl_idname = "protex.index_objects"
+    bl_label = "Objects Index Options"
+    bl_description = "Assign pass index to objects based on condition"
+    bl_options = {'REGISTER', 'UNDO'}
     
     # Properties being used
     set_index: bpy.props.IntProperty(
-        name="Set Index",
+        name = "Set Index",
         description = "Apply custom index", 
-        min=0, 
-        default=0
+        min = 0, 
+        default = 0
     )
     auto_assign: bpy.props.BoolProperty(
-        name="Auto", 
+        name = "Auto", 
         description="Automatically assigned a random index",
         default = True
     )
     affect_child: bpy.props.BoolProperty(
-        name="Include Child Collection",
-        description="Determine whether objects inside children collection will be affected or not", 
-        default=True
+        name = "Include Child Collection",
+        description = "Determine whether objects inside children collection will be affected or not", 
+        default = True
     ) 
     select_mode : bpy.props.EnumProperty(
         name = "Select Mode",
@@ -60,7 +65,7 @@ class VIEW3D_OT_index_assign_objects(bpy.types.Operator):
     
     def draw(self, context):
         layout = self.layout
-        layout.label(text="Select your target:")
+        layout.label(text="Select target:")
         layout.prop(self, "select_mode", icon='MATERIAL', expand=True)
         layout.separator(type='LINE')
         
@@ -77,24 +82,21 @@ class VIEW3D_OT_index_assign_objects(bpy.types.Operator):
             # Only one options can be enabled at a time
             index_button.enabled = not self.auto_assign
             index_button.prop(self, "set_index", text="Custom Index", icon='MATERIAL')
-        layout.separator(type='LINE')
-            
+        layout.separator(type='LINE')        
         layout.scale_y = 1.1
              
     def execute(self, context):
         manager = AssignIndex()
+        
         if self.select_mode == 'SELECTED':
-            manager.assign_selected(self.set_index, self.auto_assign)
             obj_count = manager.assign_selected(self.set_index, self.auto_assign)
             self.report({'INFO'}, f"Index assigned to {obj_count} selected object(s)")
             
-        if self.select_mode == 'COLLECTION':
-            manager.assign_collection(self.set_index, self.auto_assign, self.affect_child)
-            active_collection = manager.assign_collection(self.set_index, self.auto_assign)
-            self.report({'INFO'}, f"Index assigned to '{active_collection.name}' collection")
+        elif self.select_mode == 'COLLECTION':
+            active_collection, obj_count = manager.assign_collection(self.set_index, self.auto_assign)
+            self.report({'INFO'}, f"Index assigned to {obj_count} objects in '{active_collection.name}' collection")
             
-        if self.select_mode == 'RANDOM':
-            manager.assign_random()
+        elif self.select_mode == 'RANDOM':
             obj_count = manager.assign_random()
             self.report({'INFO'}, f"Random Index assigned to {obj_count} object(s)")
         
@@ -103,175 +105,120 @@ class VIEW3D_OT_index_assign_objects(bpy.types.Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
-
-'''
-class VIEW3D_OT_index_assign_collection(bpy.types.Operator):
-    bl_idname = "index.assign_collection"
-    bl_label = "Active Collection"
-    bl_description = "Assign a unique index to active collection"
-    bl_options = {'REGISTER', 'UNDO'}
-       
-    set_index: bpy.props.IntProperty(name = "Set Index", default = 0)
-    auto_assign: bpy.props.BoolProperty(name = "Auto Assign", default = True)   
-    affect_child: bpy.props.BoolProperty(name = "Affect Child Collection", default = True) 
-        
-    def execute(self, context):
-        manager = AssignIndex()
-        manager.assign_collection(self.set_index, self.auto_assign, self.affect_child)
-        
-        active_collection = manager.assign_collection(self.set_index, self.auto_assign, self.affect_child)
-        self.report({'INFO'}, f"Index assigned to '{active_collection.name}' collection")
-        return {'FINISHED'}
     
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-  
-    
-    
-class VIEW3D_OT_index_assign_random(bpy.types.Operator):
-    bl_idname = "index.assign_random"
-    bl_label = "Randomize"
-    bl_description = "Assign a random index to all mesh in scene"
-    bl_options = {'REGISTER', 'UNDO'}
-      
-    def execute(self, context):
-        manager = AssignIndex()
-        manager.assign_random()
-        
-        obj_count = manager.assign_random()
-        self.report({'INFO'}, f"Random Index assigned to {obj_count} object(s)")
-        return {'FINISHED'}
-'''    
     
 
-class VIEW3D_OT_index_reset_scene(bpy.types.Operator):
-    bl_idname = "index.reset_scene"
-    bl_label = "Reset"
-    bl_description = "Reset index of scene objects and/or materials"
+class ProtexResetIndex(bpy.types.Operator):
+    """Reset objects/materials index of objects in scene based on various method"""
+    
+    bl_idname = "protex.index_reset"
+    bl_label = "Reset Index Options"
+    bl_description = "Reset objects/materials index"
     bl_options = {'REGISTER', 'UNDO'}
     
-    object_reset: bpy.props.BoolProperty(name = "Object Index", default=True)
-    material_reset: bpy.props.BoolProperty(name = "Material Index", default=True)
-    target_mode: bpy.props.StringProperty(default='Scene')
+    object_reset: bpy.props.BoolProperty(
+        name = "Object Index",
+        description = "Object Pass Index", 
+        default=True
+    )
+    material_reset: bpy.props.BoolProperty(
+        name = "Material Index", 
+        description = "Material Pass Index", 
+        default=True
+    ) 
+    target_mode : bpy.props.EnumProperty(
+        name = "Select Mode",
+        description = "Target mode",
+        items = [ 
+            ('Scene', "Scene", "Reset all objects in scene"),
+            ('Selected', "Selection", "Reset selected objects"),
+            ('Collection', "Active Collection", "Reset all objects inside active collection")
+        ]
+    )
     
     def draw(self, context):
         layout = self.layout
-        layout.prop(self, "object_reset", toggle=True, icon='MESH_DATA')
-        layout.prop(self, "material_reset", toggle=True, icon='MATERIAL')
+        layout.label(text="Select target:")
+        layout.prop(self, "target_mode", icon='MATERIAL', expand=True)
+        layout.separator(type='LINE')
+        
+        row = layout.row(align=True)
+        row.prop(self, "object_reset", toggle=True, icon='MESH_DATA')
+        row.prop(self, "material_reset", toggle=True, icon='MATERIAL')
+        layout.separator(type='LINE')
+        layout.scale_y = 1.1
        
     def execute(self, context):
         manager = AssignIndex()
-        manager.reset_index(self.object_reset, self.material_reset, self.target_mode)
-        self.report({'INFO'}, "Index reset to 0")
+        active_collection, obj_count = manager.reset_index(
+            self.object_reset, 
+            self.material_reset, 
+            self.target_mode
+        )
+        
+        # Report to user based on various selection
+        reset_type = ''
+        if self.object_reset and self.material_reset:
+            reset_type = 'Objects and Material'
+        elif self.object_reset:
+            reset_type = 'Objects'
+        elif self.material_reset:
+            reset_type = 'Material'
+        else:
+            reset_type = 'None'
+        
+        if self.target_mode == 'Scene': 
+            self.report({'INFO'}, f"{reset_type} Index cleared for {obj_count} object(s) in Scene")
+        elif self.target_mode == 'Selected':
+            self.report({'INFO'}, f"{reset_type} Index cleared for {obj_count} selected object(s)")
+        elif self.target_mode == 'Collection':
+            self.report({'INFO'}, f"{reset_type} Index cleared for {obj_count} object(s) in '{active_collection.name}' collection")
+        
         return {'FINISHED'}
     
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
 
-
-
-class VIEW3D_OT_index_reset_selected(bpy.types.Operator):
-    bl_idname = "index.reset_selected"
-    bl_label = "Reset"
-    bl_description = "Reset index of selected objects and/or materials"
-    bl_options = {'REGISTER', 'UNDO'}
-    
-    object_reset: bpy.props.BoolProperty(name = "Object Index", default=True)
-    material_reset: bpy.props.BoolProperty(name = "Material Index", default=True)
-    target_mode: bpy.props.StringProperty(default='Selected')
-    
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(self, "object_reset", toggle=True, icon='MESH_DATA')
-        layout.prop(self, "material_reset", toggle=True, icon='MATERIAL')
-       
-    def execute(self, context):
-        manager = AssignIndex()
-        manager.reset_index(self.object_reset, self.material_reset, self.target_mode)
-        return {'FINISHED'}
-    
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-    
-    
-    
-class VIEW3D_OT_index_reset_collection(bpy.types.Operator):
-    bl_idname = "index.reset_collection"
-    bl_label = "Reset"
-    bl_description = "Reset index of objects and/or materials in active collection"
-    bl_options = {'REGISTER', 'UNDO'}
-    
-    object_reset: bpy.props.BoolProperty(name="Object Index", default=True)
-    material_reset: bpy.props.BoolProperty(name="Material Index", default=True)
-    target_mode: bpy.props.StringProperty(default='Collection')
-    
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(self, "object_reset", toggle=True, icon='MESH_DATA')
-        layout.prop(self, "material_reset", toggle=True, icon='MATERIAL')
-       
-    def execute(self, context):
-        manager = AssignIndex()
-        manager.reset_index(self.object_reset, self.material_reset, self.target_mode)
-        return {'FINISHED'}
-    
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-       
         
 
 
-
-class VIEW3D_PT_index_assign(bpy.types.Panel):
+class ProtexAssignIndexPanel(bpy.types.Panel):
     bl_label = "Protex Tools"
-    bl_idname = "VIEW3D_PT_index_assign"
+    bl_idname = "ProtexAssignIndexPanel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Custom"
     
     def draw(self, context):
         layout = self.layout
-        
-        layout.label(text="Index Assign")
         index_tool = layout.box()
         
-        index_tool.label(text="Index", icon='TOOL_SETTINGS')
-        index_tool.operator("index.assign_materials", icon='MATERIAL_DATA', text="Materials")
-        #index_tool.separator(type='LINE')
-        
-        #index_tool.label(text="Object Index", icon='TOOL_SETTINGS')
-        index_tool.operator("index.assign_selected", icon='SELECT_SUBTRACT', text="Objects")
-        #index_tool.operator("index.assign_collection", icon='OUTLINER_COLLECTION', text="Active Collection")
-        #index_tool.operator("index.assign_random", icon='CON_TRANSFORM_CACHE', text="Randomize")
-        #index_tool.separator(type='LINE')
+        index_tool.label(text="Index", icon='LINENUMBERS_ON')
+        row = index_tool.row()
+        row.operator("protex.index_materials", icon='MATERIAL_DATA', text="Materials")
+        row.operator("protex.index_objects", icon='OBJECT_DATAMODE', text="Objects")
+        index_tool.separator(type='LINE')
         
         index_tool.label(text="Reset", icon='PRESET')  
-        btn_all = index_tool.operator("index.reset_scene", icon='LOOP_BACK', text="All Pass Index")
-        btn_all = index_tool.operator("index.reset_selected", icon='LOOP_BACK', text="Selected Objects")
-        btn_all = index_tool.operator("index.reset_collection", icon='LOOP_BACK', text="Active Collection")
+        index_tool.operator("protex.index_reset", icon='FILE_REFRESH', text="Reset Pass Index")
         
+   
         
     
 classes = [
-            VIEW3D_OT_index_assign_materials,
-            VIEW3D_OT_index_assign_objects,
-            #VIEW3D_OT_index_assign_collection,
-            #VIEW3D_OT_index_assign_random,
-            VIEW3D_OT_index_reset_scene,
-            VIEW3D_OT_index_reset_selected,
-            VIEW3D_OT_index_reset_collection,
-            VIEW3D_PT_index_assign
+            ProtexIndexAssignMaterials,
+            ProtexIndexAssignObjects,
+            ProtexResetIndex,
+            ProtexAssignIndexPanel
             ]  
-  
-    
-    
+   
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     
 def unregister():
     for cls in classes:
-        bpy.utils.register_class(cls)
+        bpy.utils.unregister_class(cls)
     
 if __name__ == "__main__":
     register()
