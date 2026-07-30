@@ -5,41 +5,13 @@ import random
 class AssignIndex:
         
     max_index = 1400
-    used_index = set()
+    used_index = set()   
 
-    def assign_material(self):    
-        """Assigns evenly distributed Pass Index values to all materials in the scene."""
-            
-        materials = bpy.data.materials
-        material_count = len(materials)
-        
-        print(f"Found {material_count} materials in the scene")
-        
-        # Check if material count exceeds 1000
-        if material_count > self.max_index:
-            raise ValueError(f"Material count ({material_count}) exceeds maximum limit of 1000")
-        
-        # Handle edge case of no materials
-        if material_count == 0:
-            print("No materials found in the scene")
-            return 0
-        
-        # Calculate the step size for even distribution
-        if material_count == 1:
-            step_size = 0
-        else:
-            step_size = self.max_index // material_count
-        
-        # Assign Pass Index values to each material
-        for i, material in enumerate(materials):
-            pass_index = i * step_size
-            material.pass_index = pass_index
-            print(f"Material '{material.name}': Pass Index = {pass_index}")
-        
-        print(f"---Success: Assigned Pass Index values to {material_count} materials in scene")
-        return material_count
+    
 
 
+
+    
 
     def assign_selected(self, my_index, auto_assign = False):
             """Assigned a unique Pass Index values to selected objects"""
@@ -159,12 +131,202 @@ class AssignIndex:
     
     
     
-    # Ideas - Reset selected objects/ collection only
+    
+
+    
+    
+    
+    
+
+class ProtexIndexAssignMaterials(bpy.types.Operator):
+    """Iterate through all objects in scene and evenly distribute and assign a unique index value"""
+    
+    bl_idname = "protex.index_materials"
+    bl_label = "Materials"
+    bl_description = "Assign each material a unique index"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    max_index: bpy.props.IntProperty(
+        name = "Maximum Index",
+        description = "The maximum value that this tool can assign to any objects",
+        default = 1400,
+    )
+    
+    def assign_material(self):    
+        """Assigns evenly distributed Pass Index values to all materials in the scene."""  
+            
+        materials = bpy.data.materials
+        material_count = len(materials)
+        
+        print(f"Found {material_count} materials in the scene")
+        
+        # Check if material count exceeds max index, if so return error flag
+        if material_count > self.max_index:
+            self.report({'ERROR'}, f"Material count ({material_count}) exceeds maximum limit of {self.max_index}")
+            return -1
+        
+        # Handle edge case of no materials
+        if material_count == 0:
+            print("No materials found in the scene")
+            return 0
+        
+        # Calculate the step size for even distribution
+        if material_count == 1:
+            step_size = 0
+        else:
+            step_size = self.max_index // material_count
+        
+        # Assign Pass Index values to each material
+        for i, material in enumerate(materials):
+            pass_index = i * step_size
+            material.pass_index = pass_index
+            print(f"Material '{material.name}': Pass Index = {pass_index}")
+        
+        print(f"---Success: Assigned Pass Index values to {material_count} materials in scene")
+        return material_count
+    
+    def execute(self, context):
+        material_count = self.assign_material()
+        
+        # Safe cancellation if error flag is triggered
+        if material_count == -1:
+            return {'CANCELLED'}
+        
+        self.report({'INFO'}, f"Index assigned to {material_count} material(s) in scene")
+        return {'FINISHED'}
+
+
+
+
+class ProtexIndexAssignObjects(bpy.types.Operator):
+    """Assign each objects a random or custom index based on various selection method"""
+    
+    bl_idname = "protex.index_objects"
+    bl_label = "Objects Index Options"
+    bl_description = "Assign pass index to objects based on condition"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    # Properties being used
+    set_index: bpy.props.IntProperty(
+        name = "Set Index",
+        description = "Apply custom index", 
+        min = 0, 
+        default = 0
+    )
+    auto_assign: bpy.props.BoolProperty(
+        name = "Auto", 
+        description="Automatically assigned a random index",
+        default = True
+    )
+    affect_child: bpy.props.BoolProperty(
+        name = "Include Child Collection",
+        description = "Determine whether objects inside children collection will be affected or not", 
+        default = True
+    ) 
+    select_mode : bpy.props.EnumProperty(
+        name = "Select Mode",
+        description = "Target mode",
+        items = [ 
+            ('SELECTED', "Selection", "New index for objects in selection"),
+            ('COLLECTION', "Active Collection", "New index for objects in active collection"),
+            ('RANDOM', "Random", "Randomly assign all objects a unique index"),
+        ]
+    )
+    
+    def get_used_indices(self, context):
+        used_index = set()
+        
+        for obj in context.scene.objects:
+            if obj.type == 'MESH' and obj.library is None:
+                used_index.add(obj.pass_index)
+        
+        return used_index
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Select target:")
+        layout.prop(self, "select_mode", icon='MATERIAL', expand=True)
+        layout.separator(type='LINE')
+        
+        # Only bring up this menu if in 'COLLECTION' mode
+        if self.select_mode == 'COLLECTION':
+            layout.prop(self, "affect_child", icon='CON_CHILDOF', expand=True)
+        
+        # Bring up extra setting for manual input, or random input if not in 'RANDOM' mode
+        if self.select_mode != 'RANDOM':
+            auto_button = layout.split(factor=0.3)
+            auto_button.prop(self, "auto_assign", icon='MATERIAL', toggle=False)
+            index_button = auto_button.row()
+            
+            # Only one options can be enabled at a time
+            index_button.enabled = not self.auto_assign
+            index_button.prop(self, "set_index", text="Custom Index", icon='MATERIAL')
+        layout.separator(type='LINE')        
+        layout.scale_y = 1.1
+             
+    def execute(self, context):
+        manager = AssignIndex()
+        
+        if self.select_mode == 'SELECTED':
+            obj_count = manager.assign_selected(self.set_index, self.auto_assign)
+            self.report({'INFO'}, f"Index assigned to {obj_count} selected object(s)")
+            
+        elif self.select_mode == 'COLLECTION':
+            active_collection, obj_count = manager.assign_collection(self.set_index, self.auto_assign)
+            self.report({'INFO'}, f"Index assigned to {obj_count} objects in '{active_collection.name}' collection")
+            
+        elif self.select_mode == 'RANDOM':
+            obj_count = manager.assign_random()
+            self.report({'INFO'}, f"Random Index assigned to {obj_count} object(s)")
+        
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+    
+    
+    
+    
+class ProtexResetIndex(bpy.types.Operator):
+    """Reset objects/materials index of objects in scene based on various method"""
+    
+    bl_idname = "protex.index_reset"
+    bl_label = "Reset Index Options"
+    bl_description = "Reset objects/materials index"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    max_index: bpy.props.IntProperty(
+        name = "Maximum Index",
+        description = "The maximum value that this tool can assign to any objects",
+        default = 1400,
+    )
+    object_reset: bpy.props.BoolProperty(
+        name = "Object Index",
+        description = "Object Pass Index", 
+        default=True
+    )
+    material_reset: bpy.props.BoolProperty(
+        name = "Material Index", 
+        description = "Material Pass Index", 
+        default=True
+    ) 
+    target_mode : bpy.props.EnumProperty(
+        name = "Select Mode",
+        description = "Target mode",
+        items = [ 
+            ('Scene', "Scene", "Reset all objects in scene"),
+            ('Selected', "Selection", "Reset selected objects"),
+            ('Collection', "Active Collection", "Reset all objects inside active collection")
+        ]
+    )
+    
+
+    
     def reset_index(self, object_reset=True, material_reset=True, target_mode=''):
         """Clear all existing index value and reset to 0"""
         
         if not object_reset and not material_reset:
-            return
+            return None, 0
         
         # Gather all mesh objects into a list
         mesh_obj = []
@@ -190,11 +352,12 @@ class AssignIndex:
             
         obj_count = len(mesh_obj)
         
-        # Check if object count exceeds 1000
+        # Check if object count exceeds max index, if so return error flag
         if obj_count > self.max_index:
-            raise ValueError(f"Object count ({obj_count}) exceeds maximum limit of 1000")
+            self.report({'ERROR'}, f"Object count of [{obj_count}] exceeds maximum limit of {self.max_index}")
+            return None, -1
         
-        # Handle edge case of no objects
+        # Handle edge case of no objects in scene
         if obj_count == 0:
             print("No objects found in the scene")
             return None, 0
@@ -214,10 +377,8 @@ class AssignIndex:
                     if slot.material and slot.material not in processed_materials:
                         slot.material.pass_index = 0
                         processed_materials.add(slot.material)
-                        
-        # Empty your tracking list
-        self.used_index.clear()
-
+    
+        # Output messages based on user selection
         if object_reset and not material_reset:
             index_select = 'Object'
         elif not object_reset and material_reset:
@@ -233,16 +394,77 @@ class AssignIndex:
             target = 'active collection ' + f'"{str(active_collection.name)}"'
                    
         print(f"---Success: Reset {index_select} index for {obj_count} Mesh Object(s) in {target}")
+        
         return active_collection, obj_count
-
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Select target:")
+        layout.prop(self, "target_mode", expand=True)
+        layout.separator(type='LINE')
+        
+        row = layout.row(align=True)
+        row.prop(self, "object_reset", toggle=True, icon='MESH_DATA')
+        row.prop(self, "material_reset", toggle=True, icon='MATERIAL')
+        layout.separator(type='LINE')
+        layout.scale_y = 1.1
+       
+    def execute(self, context):
+        active_collection, obj_count = self.reset_index(
+            self.object_reset, 
+            self.material_reset, 
+            self.target_mode
+        )
+        
+        # Error when objects count exceed max index
+        if obj_count == -1:
+            return {'CANCELLED'}
+        
+        # Warning when no objects are available for selection
+        if obj_count == 0:
+            self.report({'WARNING'}, "No object(s) were reset.")
+            return {'CANCELLED'}
+        
+        # Report to user based on various selection
+        reset_type = ''
+        if self.object_reset and self.material_reset:
+            reset_type = 'Objects and Material'
+        elif self.object_reset:
+            reset_type = 'Objects'
+        elif self.material_reset:
+            reset_type = 'Material'
+        else:
+            reset_type = 'None'
+        
+        if self.target_mode == 'Scene': 
+            self.report({'INFO'}, f"{reset_type} Index cleared for {obj_count} object(s) in Scene")
+        elif self.target_mode == 'Selected':
+            self.report({'INFO'}, f"{reset_type} Index cleared for {obj_count} selected object(s)")
+        elif self.target_mode == 'Collection':
+            self.report({'INFO'}, f"{reset_type} Index cleared for {obj_count} object(s) in '{active_collection.name}' collection")
+        
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
     
 
 
-#Testing
-#objects = AssignIndex()
-#objects.assign_material()
-#objects.assign_selected(my_index = None, auto_assign = True)
-#objects.assign_collection(my_index = None, auto_assign = True)
-#objects.assign_random()
-#objects.reset_index()
 
+classes = [
+            ProtexIndexAssignMaterials,
+            ProtexIndexAssignObjects,
+            ProtexResetIndex,
+            ]  
+   
+def register():
+    for cls in classes:
+        bpy.utils.register_class(cls)
+    
+def unregister():
+    for cls in classes:
+        bpy.utils.unregister_class(cls)
+    
+if __name__ == "__main__":
+    register()
+    
