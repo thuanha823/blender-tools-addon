@@ -2,141 +2,6 @@ import bpy
 import random
 
 
-class AssignIndex:
-        
-    max_index = 1400
-    used_index = set()   
-
-    
-
-
-
-    
-
-    def assign_selected(self, my_index, auto_assign = False):
-            """Assigned a unique Pass Index values to selected objects"""
-            
-            # Retrieve the number of selected mesh objects
-            mesh_objects = []
-            selected_objects = bpy.context.selected_objects
-            for obj in selected_objects:
-                if obj.type == 'MESH' and obj.library is None:
-                    mesh_objects.append(obj)
-            obj_count = len(mesh_objects)
-       
-            if obj_count == 0:
-                print("No object selected")
-                return 0
-            
-            print(f"{obj_count} Mesh object(s) selected")
-            
-            # Determine if user want manual input or randomly assign
-            if auto_assign:
-                pass_index = random.randint(1, self.max_index)
-            else:
-                pass_index = my_index
-            
-            # Add index to set
-            self.used_index.add(pass_index)
-            
-            # Assign index to selected 
-            for obj in mesh_objects:
-                obj.pass_index = pass_index
-                print(f"Object '{obj.name}': Pass Index = {pass_index}")  
-
-            print(f"---Success: Assigned Pass Index values of -{pass_index}- to {obj_count} selected Mesh object(s)")
-            return obj_count
-
-
-    # Idea - Potentially auto distributing to all collection in scene
-    def assign_collection(self, my_index, auto_assign = False, affect_child = True):
-        """Assigns a unique Pass Index value to all objects inside the active collection"""
-        
-        # Deselect any selection and search for active collection
-        bpy.ops.object.select_all(action='DESELECT')
-        active_collection = bpy.context.view_layer.active_layer_collection.collection
-        
-        # Create a set to track all mesh objects within the active collections
-        collection_obj = set()
-        if affect_child:
-            for obj in active_collection.all_objects:
-                if obj.type == 'MESH' and obj.library is None:
-                    # obj.select_set(True) # Testing
-                    collection_obj.add(obj)
-                else:
-                    print(f"Skipped '{obj.name}': Not a mesh")
-        else:
-            for obj in active_collection.objects:
-                if obj.type == 'MESH' and obj.library is None:
-                    # obj.select_set(True) # Testing
-                    collection_obj.add(obj)
-                else:
-                    print(f"Skipped '{obj.name}': Not a mesh")
-                   
-        obj_count = len(collection_obj)
-        if obj_count == 0:
-            print(f"No mesh object(s) found in collection '{active_collection.name}' Collection.")
-            return 
-        
-        if auto_assign:
-            pass_index = random.randint(1, self.max_index)
-        else:
-            pass_index = my_index
-        
-        # Add index to set
-        self.used_index.add(pass_index)
-        
-        # Set index for objects inside active collection
-        for obj in collection_obj:
-            obj.pass_index = pass_index
-            print(f"Object '{obj.name}': Pass Index = {pass_index}")
-                          
-        print(f"---Success: Assigned Pass Index value of -{pass_index}- to {obj_count} Mesh object(s) in '{active_collection.name}' Collection.")
-        return active_collection, obj_count
-
-
-
-    def assign_random(self):
-        """Assigns evenly distributed random Pass Index values to all objects in the Blender scene."""
-        
-        # Gather all mesh objects into a list
-        mesh_obj = []
-        for obj in bpy.context.scene.objects:
-            if obj.type == 'MESH' and obj.library is None:
-                mesh_obj.append(obj)
-                
-        obj_count = len(mesh_obj)
-        
-        print(f"Found {obj_count} Mesh objects in the scene")
-        
-        # Check if object count exceeds 1000
-        if obj_count > self.max_index:
-            raise ValueError(f"Object count ({obj_count}) exceeds maximum limit of 1000")
-        
-        # Handle edge case of no objects
-        if obj_count == 0:
-            print("No objects found in the scene")
-            return 0
-        
-        # Create a list of entirely unique, non-sequential random integers based on amount of objects in scene
-        random_indices = random.sample(range(1, self.max_index + 1), obj_count)
-        
-        # Pairs each object with one of the random indices
-        for obj, pass_index in zip(mesh_obj, random_indices):
-            obj.pass_index = pass_index
-            print(f"Object '{obj.name}': Pass Index = {pass_index}")
-                
-        print(f"---Success: Assigned randomize Pass Index values to {obj_count} Mesh object(s)")
-        return obj_count
-    
-    
-    
-    
-
-    
-    
-    
-    
 
 class ProtexIndexAssignMaterials(bpy.types.Operator):
     """Iterate through all objects in scene and evenly distribute and assign a unique index value"""
@@ -146,11 +11,14 @@ class ProtexIndexAssignMaterials(bpy.types.Operator):
     bl_description = "Assign each material a unique index"
     bl_options = {'REGISTER', 'UNDO'}
     
+    # Properties being used
     max_index: bpy.props.IntProperty(
         name = "Maximum Index",
         description = "The maximum value that this tool can assign to any objects",
         default = 1400,
     )
+    
+    
     
     def assign_material(self):    
         """Assigns evenly distributed Pass Index values to all materials in the scene."""  
@@ -160,12 +28,12 @@ class ProtexIndexAssignMaterials(bpy.types.Operator):
         
         print(f"Found {material_count} materials in the scene")
         
-        # Check if material count exceeds max index, if so return error flag
+        # Error flag if material count exceeds max index
         if material_count > self.max_index:
             self.report({'ERROR'}, f"Material count ({material_count}) exceeds maximum limit of {self.max_index}")
             return -1
         
-        # Handle edge case of no materials
+        # Error flag is no material found in scene
         if material_count == 0:
             print("No materials found in the scene")
             return 0
@@ -185,6 +53,8 @@ class ProtexIndexAssignMaterials(bpy.types.Operator):
         print(f"---Success: Assigned Pass Index values to {material_count} materials in scene")
         return material_count
     
+    
+    
     def execute(self, context):
         material_count = self.assign_material()
         
@@ -198,6 +68,7 @@ class ProtexIndexAssignMaterials(bpy.types.Operator):
 
 
 
+
 class ProtexIndexAssignObjects(bpy.types.Operator):
     """Assign each objects a random or custom index based on various selection method"""
     
@@ -207,6 +78,11 @@ class ProtexIndexAssignObjects(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
     # Properties being used
+    max_index: bpy.props.IntProperty(
+        name = "Maximum Index",
+        description = "The maximum value that this tool can assign to any objects",
+        default = 1400,
+    )
     set_index: bpy.props.IntProperty(
         name = "Set Index",
         description = "Apply custom index", 
@@ -233,14 +109,151 @@ class ProtexIndexAssignObjects(bpy.types.Operator):
         ]
     )
     
+    
+    
     def get_used_indices(self, context):
+        """Retrieve all indices that are currently being used in scene"""
         used_index = set()
         
+        # Retrieve and store index
         for obj in context.scene.objects:
             if obj.type == 'MESH' and obj.library is None:
                 used_index.add(obj.pass_index)
         
         return used_index
+    
+    
+    
+    def assign_selected(self, context, my_index, auto_assign = False):
+            """Assigned a unique Pass Index values to selected objects, either randomized or custom user input"""
+            
+            # Retrieve the number of selected mesh objects
+            mesh_objects = []
+            selected_objects = bpy.context.selected_objects
+            for obj in selected_objects:
+                if obj.type == 'MESH' and obj.library is None:
+                    mesh_objects.append(obj)
+            obj_count = len(mesh_objects)
+       
+            if obj_count == 0:
+                print("No object selected")
+                self.report({'WARNING'}, f"No object(s) selected")
+                return 0
+            
+            print(f"{obj_count} Mesh object(s) selected")
+            
+            taken_indices = self.get_used_indices(context)
+            
+            # Determine how to assign index - user input or random generated
+            if auto_assign:
+                # If randomly assigned, check if number is taken before assigning. If so keep randomizing until it isn't
+                pass_index = random.randint(1, self.max_index)
+                while pass_index in taken_indices:
+                    pass_index = random.randint(1, self.max_index)
+                taken_indices.add(pass_index)
+            else:
+                pass_index = my_index
+                taken_indices.add(pass_index)
+            
+            # Assign index to selected 
+            for obj in mesh_objects:
+                obj.pass_index = pass_index
+                # print(f"Object '{obj.name}': Pass Index = {pass_index}")  
+
+            print(f"---Success: Assigned Pass Index values of [{pass_index}] to {obj_count} selected Mesh object(s)")
+            return obj_count
+
+
+
+    # Idea to improve - Auto distributing to all collection in scene
+    def assign_collection(self, context, my_index, auto_assign = False, affect_child = True):
+        """Assigns a unique Pass Index value to all objects inside the active collection, with option to apply to children collection"""
+        
+        # Deselect any selection and search for active collection
+        bpy.ops.object.select_all(action='DESELECT')
+        active_collection = bpy.context.view_layer.active_layer_collection.collection
+        
+        # Create a set to track all mesh objects within the active collections
+        collection_obj = set()
+        if affect_child:
+            for obj in active_collection.all_objects:
+                if obj.type == 'MESH' and obj.library is None:
+                    collection_obj.add(obj)
+                else:
+                    print(f"Skipped '{obj.name}': Not a mesh")
+        else:
+            for obj in active_collection.objects:
+                if obj.type == 'MESH' and obj.library is None:
+                    collection_obj.add(obj)
+                else:
+                    print(f"Skipped '{obj.name}': Not a mesh")
+        
+        # Error flag if no objects found inside collection         
+        obj_count = len(collection_obj)
+        if obj_count == 0:
+            print(f"No mesh object(s) found in '{active_collection.name}' collection.")
+            self.report({'WARNING'}, f"No mesh object(s) found in '{active_collection.name}' collection.")
+            return None, 0
+
+        taken_indices = self.get_used_indices(context)
+        
+        # Determine how to assign index - user input or random generated
+        if auto_assign:
+            # If randomly assigned, check if number is taken before assigning. If so keep randomizing until it isn't
+            pass_index = random.randint(1, self.max_index)
+            while pass_index in taken_indices:
+                pass_index = random.randint(1, self.max_index)
+            taken_indices.add(pass_index)
+        else:
+            pass_index = my_index
+            taken_indices.add(pass_index)
+          
+        # Set index for objects inside active collection
+        for obj in collection_obj:
+            obj.pass_index = pass_index
+            # print(f"Object '{obj.name}': Pass Index = {pass_index}")
+                          
+        print(f"---Success: Assigned Pass Index value of -{pass_index}- to {obj_count} Mesh object(s) in '{active_collection.name}' Collection.")
+        return active_collection, obj_count
+
+
+
+    def assign_random(self, context):
+        """Automatically assign randomized Pass Index values to all objects in scene."""
+        
+        # Gather all mesh objects into a list
+        mesh_obj = []
+        for obj in context.scene.objects:
+            if obj.type == 'MESH' and obj.library is None:
+                mesh_obj.append(obj)
+                
+        obj_count = len(mesh_obj)
+        
+        print(f"Found {obj_count} Mesh objects in the scene")
+        
+        # Error flag if objects count exceeds max index
+        if obj_count > self.max_index:
+            self.report({'ERROR'}, f"Object count {obj_count} exceeds maximum limit of {self.max_index}")
+            return -1
+        
+        # Error flag is no objects is found
+        if obj_count == 0:
+            print("No objects found in the scene")
+            self.report({'WARNING'}, f"No object(s) found in scene")
+            return 0
+        
+        # Create a list of entirely unique, non-sequential random integers based on amount of objects in scene
+        random_indices = random.sample(range(1, self.max_index + 1), obj_count)
+        
+        # Pairs each object with one of the random indices
+        for obj, pass_index in zip(mesh_obj, random_indices):
+            obj.pass_index = pass_index
+            # print(f"Object '{obj.name}': Pass Index = {pass_index}")
+                
+        print(f"---Success: Assigned randomize Pass Index values to {obj_count} Mesh object(s)")
+        return obj_count
+    
+    
     
     def draw(self, context):
         layout = self.layout
@@ -263,29 +276,42 @@ class ProtexIndexAssignObjects(bpy.types.Operator):
             index_button.prop(self, "set_index", text="Custom Index", icon='MATERIAL')
         layout.separator(type='LINE')        
         layout.scale_y = 1.1
+       
+       
              
     def execute(self, context):
-        manager = AssignIndex()
         
         if self.select_mode == 'SELECTED':
-            obj_count = manager.assign_selected(self.set_index, self.auto_assign)
+            obj_count = self.assign_selected(context, self.set_index, self.auto_assign)
+            # Exit if no objects are found
+            if obj_count == 0:
+                return {'CANCELLED'}
             self.report({'INFO'}, f"Index assigned to {obj_count} selected object(s)")
             
         elif self.select_mode == 'COLLECTION':
-            active_collection, obj_count = manager.assign_collection(self.set_index, self.auto_assign)
+            active_collection, obj_count = self.assign_collection(context, self.set_index, self.auto_assign, self.affect_child)
+            # Exit if no objects are found
+            if obj_count == 0:
+                return {'CANCELLED'}
             self.report({'INFO'}, f"Index assigned to {obj_count} objects in '{active_collection.name}' collection")
             
         elif self.select_mode == 'RANDOM':
-            obj_count = manager.assign_random()
+            obj_count = self.assign_random(context)
+            # Exit if no objects are found
+            if obj_count == 0:
+                return {'CANCELLED'}
             self.report({'INFO'}, f"Random Index assigned to {obj_count} object(s)")
         
         return {'FINISHED'}
+    
+    
     
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
     
     
     
+
     
 class ProtexResetIndex(bpy.types.Operator):
     """Reset objects/materials index of objects in scene based on various method"""
@@ -295,6 +321,7 @@ class ProtexResetIndex(bpy.types.Operator):
     bl_description = "Reset objects/materials index"
     bl_options = {'REGISTER', 'UNDO'}
     
+    # Properties being used
     max_index: bpy.props.IntProperty(
         name = "Maximum Index",
         description = "The maximum value that this tool can assign to any objects",
@@ -320,7 +347,7 @@ class ProtexResetIndex(bpy.types.Operator):
         ]
     )
     
-
+    
     
     def reset_index(self, object_reset=True, material_reset=True, target_mode=''):
         """Clear all existing index value and reset to 0"""
@@ -397,6 +424,8 @@ class ProtexResetIndex(bpy.types.Operator):
         
         return active_collection, obj_count
     
+    
+    
     def draw(self, context):
         layout = self.layout
         layout.label(text="Select target:")
@@ -408,6 +437,8 @@ class ProtexResetIndex(bpy.types.Operator):
         row.prop(self, "material_reset", toggle=True, icon='MATERIAL')
         layout.separator(type='LINE')
         layout.scale_y = 1.1
+       
+       
        
     def execute(self, context):
         active_collection, obj_count = self.reset_index(
@@ -445,9 +476,12 @@ class ProtexResetIndex(bpy.types.Operator):
         
         return {'FINISHED'}
     
+    
+    
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
     
+
 
 
 
