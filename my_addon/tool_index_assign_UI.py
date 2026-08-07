@@ -5,15 +5,20 @@ import bpy
 logic_module = bpy.data.texts["tool_index_assign_logic.py"].as_module()
 
 # 2. Extract your class (AssignIndex) from that module
-AssignIndex = logic_module.AssignIndex
+MaterialIndex = logic_module.ProtexIndexAssignMaterials
+ObjectIndex = logic_module.ProtexIndexAssignObjects
+ResetIndex = logic_module.ProtexResetIndex
+
 
 
 class ProtexAssignIndexPanel(bpy.types.Panel):
+    """Create 3 buttons for 3 different main functions, with pop-up dialog box for more options"""
+    
     bl_label = "Protex Tools"
     bl_idname = "ProtexAssignIndexPanel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = "Custom"
+    bl_category = "Index Assign"
     
     def draw(self, context):
         layout = self.layout
@@ -32,6 +37,9 @@ class ProtexAssignIndexPanel(bpy.types.Panel):
         
     
 classes = [
+            MaterialIndex,
+            ObjectIndex,
+            ResetIndex,
             ProtexAssignIndexPanel
             ]  
    
