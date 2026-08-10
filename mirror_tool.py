@@ -1,139 +1,137 @@
 import bpy
 import bmesh
-import re
 from mathutils import Vector
 
 
 
 class MirrorObject:
+    
+    WORLD_ORIGIN = Vector((0.0, 0.0, 0.0))
+    
     def __init__(self, axis):
         self.axis = axis
         
     def mirror_obj(self, context):
         """Mirror object across world origin axis"""
         
-        active_obj = bpy.context.active_object
-        obj_name = active_obj.name
-        obj = bpy.data.objects.get(obj_name)
+        obj = context.active_object
         
-        # assign modifier to variable
-        mod = obj.modifiers.new(name="TempName", type="MIRROR")
-        mod.name = "Custom Mirror"
+        # Assign modifier to variable
+        mod = obj.modifiers.new(name="Custom Mirror", type="MIRROR")
         
-        # choose which axis to mirror across
-        if self.axis == 'X':
-            mod.use_axis[0] = True
-        elif self.axis == 'Y':
-            mod.use_axis[0] = False
-            mod.use_axis[1] = True
-        elif self.axis == 'Z': 
-            mod.use_axis[0] = False
-            mod.use_axis[1] = False
-            mod.use_axis[2] = True
+        # Set axis
+        mod.use_axis[0] = (self.axis == 'X')
+        mod.use_axis[1] = (self.axis == 'Y')
+        mod.use_axis[2] = (self.axis == 'Z')
 
-        # Create an empty at world origin
-        bpy.ops.object.empty_add(
-            type='CUBE', 
-            align='WORLD', 
-            location=(0, 0, 0), 
-            scale=(1, 1, 1)
-        )
-        mirror_empty = bpy.context.active_object
-        mirror_empty.name = "Empty_Mirror"
-        empty_name = mirror_empty.name
-        # mirror_empty.hide_set(True)
-
-        # Assign variable to empty
-        empty = bpy.data.objects.get(empty_name)
-        mod.mirror_object = empty
-
-        # mirror_empty.hide_set(False)
+        # Create an empty at world origin without deselecting active object
+        mirror_empty = bpy.data.objects.new("Empty_Mirror", None)
+        context.collection.objects.link(mirror_empty)
         
-        # apply modifier and delete empty 
-        bpy.ops.object.select_all(action='DESELECT')
-        obj.select_set(True)
-        bpy.context.view_layer.objects.active = obj
+        # Assign empty to modifier
+        mod.mirror_object = mirror_empty
 
+        # Apply Modifier and delete empty
         bpy.ops.object.modifier_apply(modifier=mod.name)
         bpy.data.objects.remove(mirror_empty)
-
+        
         return obj
 
 
     def separate_obj(self, context):
         """Separate mirrored object from original"""
-
-        active_obj = bpy.context.active_object
-        world_origin = active_obj.location
-        obj_name = active_obj.name
-        obj = bpy.data.objects.get(obj_name)
-        bpy.ops.object.mode_set(mode='EDIT')
+        
+        # Store original object name
+        obj = context.active_object
+        base_name = obj.name
+        
+        # Enter Edit Mode safely
+        if obj.mode != 'EDIT':
+            bpy.ops.object.mode_set(mode='EDIT')
+            
+        # Switch to Vertex mode
+        context.tool_settings.mesh_select_mode = (True, False, False)
         
         # Vert select mode and storing bmesh data
         bm = bmesh.from_edit_mesh(obj.data)
-        bpy.ops.mesh.select_mode(type="VERT")
+        
+        # Deselect everything
+        for verts in bm.verts: 
+            verts.select = False
+        for faces in bm.faces: 
+            faces.select = False
+        
+        # Store world matrix outside loop
+        world_mtx = obj.matrix_world
         
         # Select all verts under certain condition
         for verts in bm.verts:
             # Convert vertex local coord into world coord
-            world_pos = obj.matrix_world @ verts.co
+            world_pos = world_mtx @ verts.co
             
             # Define selection for separation based on world location
             if self.axis == 'X':
                 if world_pos.x > 0:
-                    verts.select = True    
+                    verts.select = True
                 else:
                     verts.select = False
             elif self.axis == 'Y':
                 if world_pos.y > 0:
-                    verts.select = True    
+                    verts.select = True
                 else:
                     verts.select = False
             elif self.axis == 'Z':
                 if world_pos.z > 0:
-                    verts.select = True    
+                    verts.select = True
                 else:
                     verts.select = False
         
-        # Select all connected faces of selected verts
+        # Select face if any vertices is selected
         for faces in bm.faces:
-            for verts in faces.verts:
-                if verts.select == True:
-                    faces.select = True
-                else:
-                    faces.select = False
+            faces.select = any(verts.select for verts in faces.verts)
         
         # Update mesh selection and separate
         bmesh.update_edit_mesh(obj.data)
         bpy.ops.mesh.separate(type='SELECTED')
         bpy.ops.object.mode_set(mode='OBJECT')
-        # bpy.ops.object.select_all(action='SELECT')
         
-        # Renaming mesh based on location
+        # Renaming mesh upon separation
         for selected in bpy.context.selected_objects:
             # Find the newly created obj
-            if selected.name != obj.name:
-                print(selected.name)
-                new_obj = bpy.data.objects.get(selected.name)
-                # Strip away 3 digit following .
-                new_obj_name = re.sub(r"\.\d{3}$", "", selected.name)
-                if self.axis == 'X' or self.axis == 'Y':
-                    new_obj.name = new_obj_name + "_r"
+            if selected != obj:
+                if self.axis in {'X', 'Y'}:
+                    selected.name = base_name + "_l"
                 elif self.axis == 'Z':
-                    new_obj.name = new_obj_name + "_top"
+                    selected.name = base_name + "_top"
             else:
-                if self.axis == 'X' or self.axis == 'Y':
-                    obj.name = bpy.context.active_object.name + "_l"
+                if self.axis in {'X', 'Y'}:
+                    selected.name = base_name + "_r"
                 elif self.axis == 'Z':
-                    obj.name = bpy.context.active_object.name + "_bot"
-              
-        #bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
+                    selected.name = base_name + "_bot"
               
         return obj
         
         
-    def center_origin():
-        pass
+    def center_origin(self, context, origin_setting=""):
+        """Set the origin of the merged/separated object"""
+        
+        if context.active_object and context.active_object.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        
+        if origin_setting == 'CENTER_WORLD':
+            # Retrieve and store 3D cursor location
+            cursor = context.scene.cursor
+            saved_cursor_loc = cursor.location.copy()
+            
+            # Move cursor to world origin temporarily and set object origin
+            try:
+                cursor.location = self.WORLD_ORIGIN
+                bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+            finally:
+                cursor.location = saved_cursor_loc
+                
+        elif origin_setting == 'CENTER_OBJECT':
+            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
     
 
 
@@ -143,6 +141,11 @@ class ProtexQuickMirror(bpy.types.Operator):
     bl_label = "Quick Mirror"
     bl_idname = "tool.quick_mirror"
     bl_options = {"REGISTER", "UNDO"}
+    
+    @classmethod
+    def poll(cls, context):
+        # The button will only be clickable IF there is an active object AND it's a Mesh
+        return context.active_object is not None and context.active_object.type == 'MESH'
     
     axis: bpy.props.EnumProperty(
         name = "Axis",
@@ -159,23 +162,24 @@ class ProtexQuickMirror(bpy.types.Operator):
         description = "Separate meshes after mirroring",
         default = True
     )
-    origin_set: bpy.props.EnumProperty(
+    origin_setting: bpy.props.EnumProperty(
         name = "Origin Set Option",
         items = [
-            ('Original', "Keep original", "Maintain original origin location"),
-            ('Center =', "Center object", "Set origin to object physical center")
+            ('CENTER_WORLD', "World", "Snap object origin to world origin"),
+            ('CENTER_OBJECT', "Object", "Snap origin to object center")
         ],
-        default = 'Original',
+        default = 'CENTER_OBJECT',
         options = set()
     )
-    
+  
     
     def draw(self, context):
         layout = self.layout
         layout.label(text="Mirror Axis")
         layout.prop(self, "axis", icon='MOD_EDGESPLIT', expand=True)
         layout.prop(self, "separate_obj", icon='MOD_EDGESPLIT', expand=True)
-        layout.prop(self, "origin_set", icon='TRANSFORM_ORIGINS', expand=True)
+        layout.label(text="Center Origin")
+        layout.prop(self, "origin_setting", icon='TRANSFORM_ORIGINS', expand=True)
         layout.separator(type='LINE')
         
     
@@ -184,8 +188,9 @@ class ProtexQuickMirror(bpy.types.Operator):
         tool.mirror_obj(context)
         if self.separate_obj:
             tool.separate_obj(context)
-        if self.origin_set == 'Center':
-            pass
+        tool.center_origin(context, self.origin_setting)
+        
+        self.report({'INFO'}, f"Object mirrored acrossed {self.axis}-axis")
         
         return {"FINISHED"}
     
@@ -199,12 +204,11 @@ class ProtexPanelQuickMirror(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = "Thuan\'s Addon"
-    bl_label = "General Tool"
+    bl_label = "Custom Tool"
     
     def draw(self, context):
         layout = self.layout
-        mirror_tool = layout.box()
-        
+        mirror_tool = layout.box()  
         row = mirror_tool.row()
         row.operator("tool.quick_mirror", icon="MOD_MIRROR")
     
@@ -221,7 +225,7 @@ def register():
     
 def unregister():
     for cls in classes:
-        bpy.utils.register_class(cls)
+        bpy.utils.unregister_class(cls)
     
 if __name__ == "__main__":
     register()
