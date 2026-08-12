@@ -48,67 +48,28 @@ class MirrorObject:
         # Enter Edit Mode safely
         if obj.mode != 'EDIT':
             bpy.ops.object.mode_set(mode='EDIT')
-            
-        # Switch to Vertex mode
-        context.tool_settings.mesh_select_mode = (True, False, False)
         
-        # Vert select mode and storing bmesh data
-        bm = bmesh.from_edit_mesh(obj.data)
-        
-        # Deselect everything
-        for verts in bm.verts: 
-            verts.select = False
-        for faces in bm.faces: 
-            faces.select = False
-        
-        # Store world matrix outside loop
-        world_mtx = obj.matrix_world
-        
-        # Select all verts under certain condition
-        for verts in bm.verts:
-            # Convert vertex local coord into world coord
-            world_pos = world_mtx @ verts.co
-            
-            # Define selection for separation based on world location
-            if self.axis == 'X':
-                if world_pos.x > 0:
-                    verts.select = True
-                else:
-                    verts.select = False
-            elif self.axis == 'Y':
-                if world_pos.y > 0:
-                    verts.select = True
-                else:
-                    verts.select = False
-            elif self.axis == 'Z':
-                if world_pos.z > 0:
-                    verts.select = True
-                else:
-                    verts.select = False
-        
-        # Select face if any vertices is selected
-        for faces in bm.faces:
-            faces.select = any(verts.select for verts in faces.verts)
-        
-        # Update mesh selection and separate
-        bmesh.update_edit_mesh(obj.data)
-        bpy.ops.mesh.separate(type='SELECTED')
+        # Select all geometry and separate
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.separate(type='LOOSE')
         bpy.ops.object.mode_set(mode='OBJECT')
         
-        # Renaming mesh upon separation
-        for selected in bpy.context.selected_objects:
-            # Find the newly created obj
-            if selected != obj:
-                if self.axis in {'X', 'Y'}:
-                    selected.name = base_name + "_l"
-                elif self.axis == 'Z':
-                    selected.name = base_name + "_top"
-            else:
-                if self.axis in {'X', 'Y'}:
-                    selected.name = base_name + "_r"
-                elif self.axis == 'Z':
-                    selected.name = base_name + "_bot"
-              
+        # enter the origins immediately and retrieve location
+        bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
+        
+        # Renaming based on actual physical location
+        for selected in context.selected_objects:
+            
+            # Check the actual coordinate of the centered origin
+            if self.axis == 'X':
+                suffix = "_r" if selected.location.x > 0 else "_l"
+            elif self.axis == 'Y':
+                suffix = "_r" if selected.location.y > 0 else "_l"
+            elif self.axis == 'Z':
+                suffix = "_top" if selected.location.z > 0 else "_bot"
+                
+            selected.name = base_name + suffix
+        
         return obj
         
         
@@ -131,7 +92,7 @@ class MirrorObject:
                 cursor.location = saved_cursor_loc
                 
         elif origin_setting == 'CENTER_OBJECT':
-            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
+            bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
     
 
 
@@ -144,7 +105,7 @@ class ProtexQuickMirror(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        # The button will only be clickable IF there is an active object AND it's a Mesh
+        """The button will only be clickable IF there is an active object AND it's a Mesh"""
         return context.active_object is not None and context.active_object.type == 'MESH'
     
     axis: bpy.props.EnumProperty(
