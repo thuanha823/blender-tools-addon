@@ -25,7 +25,8 @@ class MyTool_Panel(bpy.types.Panel):
     bl_idname = "mytool_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_category = 'Thuan\'s Addon'
+    #bl_category = 'Thuan\'s Addon'
+    bl_category = 'Personal Tools'
     
     def draw(self, context):
         layout = self.layout
@@ -45,8 +46,8 @@ class MyTool_Panel(bpy.types.Panel):
         tool.separator(type='LINE')
         
         tool.label(text="Custom Orientation", icon='ORIENTATION_GIMBAL')
-        tool.operator("view3d.custom_orientation", text="New Orientation")
-        tool.operator("view3d.delete_custom", text="Delete All Custom Orientation")
+        tool.operator("view3d.custom_orientation", text="New Orientation", icon='FILE_NEW')
+        tool.operator("view3d.delete_custom", text="Delete All Custom", icon='TRASH')
         
         index_tool = layout.box()
         index_tool.label(text="Index Assign", icon='PRESET_NEW')
@@ -59,11 +60,6 @@ class MyTool_Panel(bpy.types.Panel):
 
 classes = [
             MyTool_Panel,
-            cleanUp,
-            custom_orient,
-            clear_orient,
-            quickMirror,
-            bevelTool,
 ]
         
 def register():

@@ -20,9 +20,12 @@ class ProtexIndexAssignMaterials(bpy.types.Operator):
 
     def assign_material(self):
         """Assigns evenly distributed Pass Index values to all materials in the scene."""
-
+        
+        # Ignore Grease Pencil/2D materials and track only 3D scene materials
         materials = bpy.data.materials
-        material_count = len(materials)
+        clean_materials = [mat for mat in bpy.data.materials if not mat.is_grease_pencil]
+        
+        material_count = len(clean_materials)
 
         print(f"Found {material_count} materials in the scene")
 

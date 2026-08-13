@@ -105,7 +105,7 @@ class ProtexQuickMirror(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        """The button will only be clickable IF there is an active object AND it's a Mesh"""
+        # Only available IF there is an active object AND it's a Mesh
         return context.active_object is not None and context.active_object.type == 'MESH'
     
     axis: bpy.props.EnumProperty(

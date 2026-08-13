@@ -1,4 +1,5 @@
 import bpy
+import bmesh
 from bpy.props import EnumProperty
 
 
@@ -7,6 +8,11 @@ class VIEW3D_OT_quick_collection(bpy.types.Operator):
     bl_label = "Quick Collection"
     bl_options = {'REGISTER', 'UNDO'}
     bl_description = "Create a new collection and name after active object"
+    
+    @classmethod
+    def poll(cls, context):
+        """The button will only be clickable IF there is an active object"""
+        return context.active_object is not None
     
     def execute(self, context):
         obj = context.active_object
@@ -61,16 +67,26 @@ class VIEW3D_OT_custom_transform_orientation(bpy.types.Operator):
     bl_description = "New transform orientation from selected face, edge, or vertices"
     bl_options = {'REGISTER', 'UNDO'}
     
+    @classmethod
+    def poll(cls, context):
+        # Check if mesh object is selected AND and Edit Mode with selection
+        obj = context.active_object
+        
+        if not obj or obj.type != 'MESH':
+            return False
+        if context.mode != 'EDIT_MESH':
+            return False
+        
+        return obj.data.total_vert_sel > 0
+    
     # Pop up box for renaming, with set default name
     new_name: bpy.props.StringProperty(
-        name = "Orientation Name",
-        description = "Name for the new transform orientation",
+        name = "Name",
+        description = "Name for new transform orientation",
         default = "My Custom"
     )
 
-
     def execute(self, context):
-
         obj = context.active_object
         if obj.type != 'MESH':
             self.report({'WARNING'}, "No mesh object selected")

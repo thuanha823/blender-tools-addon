@@ -4,10 +4,10 @@ import bpy
 from bpy.props import StringProperty, PointerProperty
 
 bl_info = {
-    "name": "Custom Tool Addon",
+    "name": "Thuan Blender Addon",
     "author": "Thuan Ha",
     "version": (1, 0, 0),
-    "blender": (4, 5, 1),
+    "blender": (5, 2, 0),
     "location": "View3D > UI",
     "description": "Custom tools for workflow and convenience",
     "category": "Tools"
