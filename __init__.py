@@ -15,10 +15,12 @@ bl_info = {
 
 
 class MyAddonProperties(bpy.types.PropertyGroup):
-    export_filepath: StringProperty(
-        name = "Export Path",
-        description = "File path for exporting objects",
-        subtype = 'FILE_PATH'
+    # Create folder browser
+    export_directory: StringProperty(
+        name = "Path",
+        description = "Choose an export location",
+        default = "",
+        subtype = 'DIR_PATH'
     )
 
 
@@ -27,12 +29,22 @@ modules = [
     for module in [
         "addon_ui",
         "mirror_tool",
+        "bevel_weight_by_Angle",
+        "general_tools",
+        "mirror_tool",
+        "tool_index_assign_logic",
+        "zero_export_tool",
     ]
 ]
 
 
 def register():
-    # Loop through sub-modules and register them first
+    # Regiser custom properties first
+    bpy.utils.register_class(MyAddonProperties)
+    bpy.types.Scene.my_addon_props = PointerProperty(type=MyAddonProperties)
+    print("Addon properties registered.")
+    
+    # Loop through sub-modules and register them
     for module_name in modules:
         if module_name in sys.modules:
             module = importlib.reload(sys.modules[module_name])
@@ -43,26 +55,18 @@ def register():
         
         if hasattr(module, "register"):
             module.register()
-            
-    # Then, register the custom properties
-    bpy.utils.register_class(MyAddonProperties)
-    bpy.types.Scene.my_addon_props = PointerProperty(type=MyAddonProperties)
-    
-    print("Addon properties registered.")
-
 
 def unregister():
-    # Unregister custom properties first
-    del bpy.types.Scene.my_addon_props
-    bpy.utils.unregister_class(MyAddonProperties)
-    print("Addon properties unregistered.")
-    
-    # Then, loop through and unregister the sub-modules
+    # Unregister the sub-modules first
     for module_name in reversed(modules): # Unregister in reverse order
         if module_name in sys.modules and hasattr(sys.modules[module_name], "unregister"):
             sys.modules[module_name].unregister()
             print(f'unregistered module "{module_name}"')
-
-
+    
+    # Unregister custom properties
+    del bpy.types.Scene.my_addon_props
+    bpy.utils.unregister_class(MyAddonProperties)
+    print("Addon properties unregistered.")
+    
 if __name__ == "__main__":
     register()
