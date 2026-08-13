@@ -5,10 +5,10 @@ import mathutils
 
 
 
-class ProtexAutoBevelWeight(bpy.types.Operator):
+class TOOL_OT_auto_bevel_weight(bpy.types.Operator):
     """Automatically apply Bevel Weight to active object based on angle threshold"""
     
-    bl_idname = "protex.autobevelweight"
+    bl_idname = "object.auto_bevel_weight"
     bl_label = "Auto Bevel Weight"
     bl_label_short = "Auto Bevel Weight"
     bl_options = {'REGISTER', 'UNDO'}
@@ -41,7 +41,7 @@ class ProtexAutoBevelWeight(bpy.types.Operator):
     )
     
     
-    def auto_weight(self, context, user_angle, boundary_select, bev_weight):
+    def auto_bevel_weight(self, context, user_angle, boundary_select, bev_weight):
         """Automatically set bevel weight of selected object based on various parameters"""
         
         current_obj = context.active_object
@@ -164,7 +164,7 @@ class ProtexAutoBevelWeight(bpy.types.Operator):
     def execute(self, context):
         # Stop if function safety check failed
         if self.mode == 'APPLY':
-            result = self.auto_weight(context, self.user_angle, self.boundary_select, self.bev_weight)
+            result = self.auto_bevel_weight(context, self.user_angle, self.boundary_select, self.bev_weight)
             if result == {'CANCELLED'}:
                 return {'CANCELLED'}
             self.report({'INFO'}, f"Bevel Weight value of {self.bev_weight:.2f} has been applied to edges.")
@@ -181,30 +181,10 @@ class ProtexAutoBevelWeight(bpy.types.Operator):
     # Bring up pop up dialog box when button is clicked
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=250)
-    
-    
-    
-class ProtexPanelBevelWeight(bpy.types.Panel):
-    bl_idname = "VIEW3D_PT_protex_panel_bevelWeight"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "Thuan\'s Addon"
-    bl_label = "Bevel Weight"
-    
-    def draw(self, context):
-        layout = self.layout
-        bevel_tool = layout.box()
-        
-        row = bevel_tool.row()
-        row.operator("protex.autobevelweight")
-    
-
-
 
 
 classes = [
-            ProtexAutoBevelWeight,
-            ProtexPanelBevelWeight
+            TOOL_OT_auto_bevel_weight,
             ]
         
 def register():

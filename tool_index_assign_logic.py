@@ -3,10 +3,10 @@ import random
 
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty, IntProperty
 
-class ProtexIndexAssignMaterials(bpy.types.Operator):
+class TOOL_3D_assign_index_mat(bpy.types.Operator):
     """Iterate through all objects in scene and evenly distribute and assign a unique index value"""
 
-    bl_idname = "protex.index_materials"
+    bl_idname = "object.index_materials"
     bl_label = "Materials"
     bl_description = "Assign each material a unique index"
     bl_options = {'UNDO'}
@@ -65,13 +65,13 @@ class ProtexIndexAssignMaterials(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class ProtexIndexAssignObjects(bpy.types.Operator):
+class TOOL_3D_assign_index_obj(bpy.types.Operator):
     """Assign each objects a random or custom index based on various selection method"""
 
-    bl_idname = "protex.index_objects"
+    bl_idname = "object.index_objects"
     bl_label = "Objects Index Options"
     bl_description = "Assign pass index to objects based on condition"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'UNDO'}
 
     # Properties being used
     max_index: IntProperty(
@@ -296,13 +296,13 @@ class ProtexIndexAssignObjects(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
-class ProtexResetIndex(bpy.types.Operator):
+class TOOL_3D_reset_index(bpy.types.Operator):
     """Reset objects/materials index of objects in scene based on various method"""
 
-    bl_idname = "protex.index_reset"
+    bl_idname = "object.index_reset"
     bl_label = "Reset Index Options"
     bl_description = "Reset objects/materials index"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'UNDO'}
 
     # Properties being used
     max_index: IntProperty(
@@ -457,9 +457,9 @@ class ProtexResetIndex(bpy.types.Operator):
 
 
 classes = [
-            ProtexIndexAssignMaterials,
-            ProtexIndexAssignObjects,
-            ProtexResetIndex,
+            TOOL_3D_assign_index_mat,
+            TOOL_3D_assign_index_obj,
+            TOOL_3D_reset_index,
             ]  
    
 def register():

@@ -95,12 +95,11 @@ class MirrorObject:
             bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='MEDIAN')
     
 
-
-class ProtexQuickMirror(bpy.types.Operator):
+class TOOL_OT_quick_mirror(bpy.types.Operator):
     """Mirror a selected objected across specific axis"""
     
     bl_label = "Quick Mirror"
-    bl_idname = "tool.quick_mirror"
+    bl_idname = "object.quick_mirror"
     bl_options = {"REGISTER", "UNDO"}
     
     @classmethod
@@ -133,7 +132,6 @@ class ProtexQuickMirror(bpy.types.Operator):
         options = set()
     )
   
-    
     def draw(self, context):
         layout = self.layout
         layout.label(text="Mirror Axis")
@@ -143,7 +141,6 @@ class ProtexQuickMirror(bpy.types.Operator):
         layout.prop(self, "origin_setting", icon='TRANSFORM_ORIGINS', expand=True)
         layout.separator(type='LINE')
         
-    
     def execute(self, context):
         tool = MirrorObject(self.axis)
         tool.mirror_obj(context)
@@ -158,26 +155,9 @@ class ProtexQuickMirror(bpy.types.Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self, width=250)
     
-    
-    
-class ProtexPanelQuickMirror(bpy.types.Panel):
-    bl_idname = "VIEW3D_PT_protex_panel_quickMirror"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "Thuan\'s Addon"
-    bl_label = "Custom Tool"
-    
-    def draw(self, context):
-        layout = self.layout
-        mirror_tool = layout.box()  
-        row = mirror_tool.row()
-        row.operator("tool.quick_mirror", icon="MOD_MIRROR")
-    
-    
 
 classes = [
-            ProtexQuickMirror,
-            ProtexPanelQuickMirror
+            TOOL_OT_quick_mirror,
             ]
         
 def register():

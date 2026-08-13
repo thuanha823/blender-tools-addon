@@ -5,11 +5,11 @@ from bpy_extras.io_utils import ExportHelper
 
 
 
-class ExportAtOrigin(bpy.types.Operator):
+class TOOL_OT_export_origin(bpy.types.Operator):
     """Export any object from the origin of scene while maintaining original position"""
     
     bl_label = "Export From Origin"
-    bl_idname = "tool.export_origin"
+    bl_idname = "scene.export_origin"
     bl_options = {"UNDO"}
     
     file_format: EnumProperty(
@@ -141,7 +141,7 @@ class ExportAtOrigin(bpy.types.Operator):
 
     
 classes = [
-            ExportAtOrigin,
+            TOOL_OT_export_origin,
 ]
         
 def register():

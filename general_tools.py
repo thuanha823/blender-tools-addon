@@ -3,10 +3,10 @@ import bmesh
 from bpy.props import EnumProperty
 
 
-class VIEW3D_OT_quick_collection(bpy.types.Operator):
+class TOOL_OT_quick_collection(bpy.types.Operator):
     bl_idname = "object.quick_collection"
     bl_label = "Quick Collection"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'UNDO'}
     bl_description = "Create a new collection and name after active object"
     
     @classmethod
@@ -14,7 +14,7 @@ class VIEW3D_OT_quick_collection(bpy.types.Operator):
         """The button will only be clickable IF there is an active object"""
         return context.active_object is not None
     
-    def execute(self, context):
+    def quick_collection(self, context):
         obj = context.active_object
         if not obj:
             self.report({'WARNING'}, "No active object selected")
@@ -28,16 +28,18 @@ class VIEW3D_OT_quick_collection(bpy.types.Operator):
             col.objects.unlink(obj)
         new_col.objects.link(obj)
         
-        self.report({'INFO'}, "Object assigned to collection")
-        
+        self.report({'INFO'}, f"Object assigned to '{obj.name}' collection")
+    
+    def execute(self, context):
+        self.quick_collection(context)
         return {'FINISHED'}
     
     
-class VIEW3D_OT_clean_up(bpy.types.Operator):
-    bl_idname = "view3d.clean_up"
+class TOOL_OT_clean_up(bpy.types.Operator):
+    bl_idname = "scene.clean_up"
     bl_label = "Clean Up"
     bl_description = "Clean up scene, file, or data"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'UNDO'}
     
     action: EnumProperty(
         name = "Cleanup Type",
@@ -61,8 +63,8 @@ class VIEW3D_OT_clean_up(bpy.types.Operator):
         return {'FINISHED'} 
     
 
-class VIEW3D_OT_custom_transform_orientation(bpy.types.Operator):
-    bl_idname = "view3d.custom_orientation"
+class TOOL_OT_custom_transform_orientation(bpy.types.Operator):
+    bl_idname = "scene.custom_orientation"
     bl_label = "Custom Transform Orientation"
     bl_description = "New transform orientation from selected face, edge, or vertices"
     bl_options = {'REGISTER', 'UNDO'}
@@ -112,8 +114,8 @@ class VIEW3D_OT_custom_transform_orientation(bpy.types.Operator):
         return {'FINISHED'}
     
 
-class VIEW3D_OT_delete_custom_orientation(bpy.types.Operator):
-    bl_idname = "view3d.delete_custom"
+class TOOL_OT_delete_custom_orientation(bpy.types.Operator):
+    bl_idname = "scene.delete_custom"
     bl_label = "Delete Custom Orientation"
     bl_description = "Delete all user created orientations"
     bl_options = {'REGISTER', 'UNDO'}
@@ -142,41 +144,11 @@ class VIEW3D_OT_delete_custom_orientation(bpy.types.Operator):
         return {'FINISHED'}
     
 
-class VIEW3D_OT_mirror_object(bpy.types.Operator):
-    bl_idname = "view3d.mirror_obj"
-    bl_label = "Create Mirror Copy"
-    bl_description = "Mirror selected object and create a separate mesh"
-    bl_options = {'REGISTER', 'UNDO'}
-    
-    action: EnumProperty(
-        name = "Mirror Axis",
-        description = "Choose which axis to mirror object across",
-        items=[
-            ('X', "X", "Mirro X-axis"),
-            ('Y', "Y", "Mirro Y-axis"),
-            ('Z', "Z", "Mirro Z-axis")
-        ], 
-        default = 'X'
-    )      
-    
-    def execute(self, context):
-        obj = context.active_object
-        
-        if self.action == 'X':
-            pass
-        elif self.action == 'Y':
-            pass
-        elif self.action == 'Z':
-            pass
-        
-        return{'FINISHED'}
-    
-
 classes = [
-            VIEW3D_OT_quick_collection, 
-            VIEW3D_OT_clean_up,
-            VIEW3D_OT_custom_transform_orientation,
-            VIEW3D_OT_delete_custom_orientation,
+            TOOL_OT_quick_collection, 
+            TOOL_OT_clean_up,
+            TOOL_OT_custom_transform_orientation,
+            TOOL_OT_delete_custom_orientation,
 ]
         
 def register():
