@@ -1,6 +1,6 @@
 import bpy
 import os
-from bpy.props import StringProperty
+from bpy.props import EnumProperty
 from bpy_extras.io_utils import ExportHelper
 
 
@@ -10,70 +10,93 @@ class ExportAtOrigin(bpy.types.Operator):
     
     bl_label = "Export From Origin"
     bl_idname = "tool.export_origin"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options = {"UNDO"}
     
-    output_path: StringProperty(
-        default = ""
+    file_format: EnumProperty(
+        name="Export File Format",
+        description="Choose what file type to export as",
+        items=[
+            ('FBX', "FBX", ""),  # noqa
+            ('GLB', "GLB", ""),  # noqa
+            ('OBJ', "OBJ", ""),  # noqa
+        ],
     )
-        
-    def export_at_origin(self, context):
+    
+    @classmethod
+    def poll(cls, context):
+        # Only available IF there is an active object AND it's a Mesh
+        return context.active_object is not None and context.active_object.type == 'MESH'
+   
+    def export_at_origin(self, context, format):
         # Specify the output folder for the GLB file with raw string
         # output_folder = r"C:\Users\vn57por\Desktop\Sofa Geometry Node\assets\variants_v4"
-        output_folder = r"G:\My Drive\Python\Asset"
+        output_folder = context.scene.my_addon_props.export_directory
+        
+        # Warning if no directory is specified
+        if not output_folder:
+            self.report({'ERROR'}, "Please select an export directory")
+            return {'CANCELLED'}
 
-            # Ensure the output folder exists; create it if it doesn't
+        # Ensure the output folder exists; create it if it doesn't
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
-            # Get the currently selected objects in the Blender scene
-        selected_objects = bpy.context.selected_objects
+        # Get the currently selected objects in the Blender scene
+        selected_objects = context.selected_objects
 
-            # Check if there are any selected objects
+        # Check if there are any selected objects
         if not selected_objects:
-            print("No objects selected. Please select object(s) to proceed.")
+            self.report({'WARNING'}, "No objects selected.")
+            return {'CANCELLED'}
         else:
-                # Save the original transformations of selected objects
-            original_transforms = {obj: (obj.location.copy(), 
-                                   obj.rotation_euler.copy(), 
-                                   obj.scale.copy()) for obj in selected_objects}
+            # Save the original transformations of selected objects
+            original_transforms = {
+            obj: (
+                obj.location.copy(), 
+                obj.rotation_euler.copy(), 
+                obj.scale.copy()
+                ) 
+                for obj in selected_objects
+            }
 
-                # Temporarily reset the transformations to the origin for export
+            # Temporarily reset the transformations to the origin for export
             for obj in selected_objects:
                 obj.location = (0, 0, 0)
                 obj.rotation_euler = (0, 0, 0)
                 obj.scale = (1, 1, 1)
 
-                # Deselect all objects in the scene
-            bpy.ops.object.select_all(action='DESELECT')
-
-                # Reselect the objects that were initially selected
+            # Isolate object selection
             for obj in selected_objects:
+                bpy.ops.object.select_all(action='DESELECT')
                 obj.select_set(True)
 
-                # Export each selected object individually
-            for obj in selected_objects:
-                    # Set the export file path using the object's name
+                # Set the export file path using the object's name
                 export_file_path = os.path.join(output_folder, f"{obj.name}.fbx")
 
-                    # Export the object to a GLB file with specified settings
+                # Export setting
                 bpy.ops.export_scene.fbx(
-                    filepath=export_file_path           
+                    filepath=export_file_path,
+                    use_selection=True           
                 )
+                self.report({'INFO'}, f"Exported {obj.name} to {output_folder}")
 
-                    # Notify the user of the successful export for this object
-                print(f"Exported {obj.name} to {export_file_path}")
-
-                # Restore the original transformations of the objects
+            # Restore the original transformations of the objects
             for obj, (location, rotation, scale) in original_transforms.items():
                 obj.location = location
                 obj.rotation_euler = rotation
                 obj.scale = scale
+            
+            # Reselect the original objects    
+            for obj in selected_objects:
+                obj.select_set(True)
 
-                # Notify the user that all exports are complete
             print("All selected objects have been exported.")
+            self.report({'INFO'}, "Object export successfully")
     
     def draw(self, context):
         layout = self.layout
+        layout.label(text="File Type")
+        layout.prop(self, "file_format", expand=True)
         my_settings = context.scene.my_addon_props
         layout.prop(my_settings, "export_directory")
         layout.separator()
@@ -81,7 +104,6 @@ class ExportAtOrigin(bpy.types.Operator):
     def execute(self, context):
         self.export_at_origin(context)
         export_dir = context.scene.my_addon_props.export_directory
-        
         return {"FINISHED"}
         
     def invoke(self, context, event):
