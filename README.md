@@ -1,5 +1,17 @@
-# Custom Blender Tools
-Toolbox:
+# Current Toolbox
+General
 - Quick Collection
-- Clean Up Tool
-- Custom Transform Orientation
+- Quick Mirror
+- Auto Bevel Weight
+- Export at Origin
+
+Clean Up
+- File / Scene / Data
+
+Custom Orientation
+- New Orientation
+- Delete Custom Orientation
+
+Index Assign
+- Material / Objects
+- Reset Pass Index
