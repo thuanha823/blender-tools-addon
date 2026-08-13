@@ -1,6 +1,6 @@
 import bpy
 import os
-from bpy.props import EnumProperty
+from bpy.props import BoolProperty, EnumProperty
 from bpy_extras.io_utils import ExportHelper
 
 
@@ -21,13 +21,18 @@ class ExportAtOrigin(bpy.types.Operator):
             ('OBJ', "OBJ", ""),  # noqa
         ],
     )
+    include_children: BoolProperty(
+        name="Include Childrens",
+        description="Select whether children objects will be exported alongside selected object",
+        default=True
+    )
     
     @classmethod
     def poll(cls, context):
         # Only available IF there is an active object AND it's a Mesh
         return context.active_object is not None and context.active_object.type == 'MESH'
    
-    def export_at_origin(self, context, format):
+    def export_at_origin(self, context, file_format="", include_children=True):
         output_folder = context.scene.my_addon_props.export_directory
         
         # Warning if no directory is specified
@@ -40,46 +45,56 @@ class ExportAtOrigin(bpy.types.Operator):
             os.makedirs(output_folder)
 
         # Get the currently selected objects in the Blender scene
-        selected_objects = context.selected_objects
+        raw_selection = context.selected_objects
 
         # Check if there are any selected objects
-        if not selected_objects:
+        if not raw_selection:
             self.report({'WARNING'}, "No objects selected.")
             return {'CANCELLED'}
-        else:
-            # Save the original transformations of selected objects
-            original_transforms = {
-            obj: (
-                obj.location.copy(), 
-                obj.rotation_euler.copy(), 
-                obj.scale.copy()
-                ) 
-                for obj in selected_objects
-            }
+        
+        # Identify the root object
+        top_level_objects = [
+            obj for obj in raw_selection
+            if obj.parent not in raw_selection
+        ]
+        
+        # Save the original transformations of selected objects
+        original_transforms = {
+        obj: (
+            obj.location.copy(), 
+            obj.rotation_euler.copy(), 
+            obj.scale.copy()
+            ) 
+            for obj in top_level_objects
+        }
 
-            # Temporarily reset the transformations to the origin for export
-            for obj in selected_objects:
-                obj.location = (0, 0, 0)
-                obj.rotation_euler = (0, 0, 0)
-                obj.scale = (1, 1, 1)
+        # Temporarily reset the transformations to the origin for export
+        for obj in top_level_objects:
+            obj.location = (0, 0, 0)
+            obj.rotation_euler = (0, 0, 0)
+            obj.scale = (1, 1, 1)
 
             # Isolate object selection
-            for obj in selected_objects:
+            for obj in top_level_objects:
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select_set(True)
+                
+                if include_children:
+                    for child in obj.children_recursive:
+                        child.select_set(True)
 
                 # Set the export file path using the object's name
-                export_file_path = os.path.join(output_folder, f"{obj.name}.{format}")
+                export_file_path = os.path.join(output_folder, f"{obj.name}.{file_format.lower()}")
 
                 # Export setting
-                if format == "FBX":
+                if file_format == "FBX":
                     bpy.ops.export_scene.fbx(
                         filepath = export_file_path,
                         use_selection = True           
                     )
                     self.report({'INFO'}, f"Exported {obj.name} as FBX")
                 
-                elif format == "GLB":
+                elif file_format == "GLB":
                     bpy.ops.export_scene.gltf(
                         filepath = export_file_path,
                         use_selection = True,
@@ -88,7 +103,7 @@ class ExportAtOrigin(bpy.types.Operator):
                     )
                     self.report({'INFO'}, f"Exported {obj.name} as GLB")
                     
-                elif format == "OBJ":
+                elif file_format == "OBJ":
                     bpy.ops.wm.obj_export(
                         filepath = export_file_path,
                         export_selected_objects = True           
@@ -102,20 +117,22 @@ class ExportAtOrigin(bpy.types.Operator):
                 obj.scale = scale
             
             # Reselect the original objects    
-            for obj in selected_objects:
+            for obj in raw_selection:
                 obj.select_set(True)
     
     def draw(self, context):
         layout = self.layout
         row = layout.row()
         row.label(text="File Type:")
-        row.prop(self, "file_format", expand=True)
+        layout.prop(self, "file_format", expand=True)
+        row.prop(self, "include_children", expand=True)
+        
         my_settings = context.scene.my_addon_props
         layout.prop(my_settings, "export_directory")
         layout.separator()
     
     def execute(self, context):
-        self.export_at_origin(context, self.file_format)
+        self.export_at_origin(context, self.file_format, self.include_children)
         export_dir = context.scene.my_addon_props.export_directory
         return {"FINISHED"}
         
