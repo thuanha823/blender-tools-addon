@@ -28,8 +28,6 @@ class ExportAtOrigin(bpy.types.Operator):
         return context.active_object is not None and context.active_object.type == 'MESH'
    
     def export_at_origin(self, context, format):
-        # Specify the output folder for the GLB file with raw string
-        # output_folder = r"C:\Users\vn57por\Desktop\Sofa Geometry Node\assets\variants_v4"
         output_folder = context.scene.my_addon_props.export_directory
         
         # Warning if no directory is specified
@@ -71,14 +69,31 @@ class ExportAtOrigin(bpy.types.Operator):
                 obj.select_set(True)
 
                 # Set the export file path using the object's name
-                export_file_path = os.path.join(output_folder, f"{obj.name}.fbx")
+                export_file_path = os.path.join(output_folder, f"{obj.name}.{format}")
 
                 # Export setting
-                bpy.ops.export_scene.fbx(
-                    filepath=export_file_path,
-                    use_selection=True           
-                )
-                self.report({'INFO'}, f"Exported {obj.name} to {output_folder}")
+                if format == "FBX":
+                    bpy.ops.export_scene.fbx(
+                        filepath = export_file_path,
+                        use_selection = True           
+                    )
+                    self.report({'INFO'}, f"Exported {obj.name} as FBX")
+                
+                elif format == "GLB":
+                    bpy.ops.export_scene.gltf(
+                        filepath = export_file_path,
+                        use_selection = True,
+                        export_apply = True,
+                        export_animation_mode = "NLA_TRACKS"           
+                    )
+                    self.report({'INFO'}, f"Exported {obj.name} as GLB")
+                    
+                elif format == "OBJ":
+                    bpy.ops.wm.obj_export(
+                        filepath = export_file_path,
+                        export_selected_objects = True           
+                    )
+                    self.report({'INFO'}, f"Exported {obj.name} as OBJ")
 
             # Restore the original transformations of the objects
             for obj, (location, rotation, scale) in original_transforms.items():
@@ -89,20 +104,18 @@ class ExportAtOrigin(bpy.types.Operator):
             # Reselect the original objects    
             for obj in selected_objects:
                 obj.select_set(True)
-
-            print("All selected objects have been exported.")
-            self.report({'INFO'}, "Object export successfully")
     
     def draw(self, context):
         layout = self.layout
-        layout.label(text="File Type")
-        layout.prop(self, "file_format", expand=True)
+        row = layout.row()
+        row.label(text="File Type:")
+        row.prop(self, "file_format", expand=True)
         my_settings = context.scene.my_addon_props
         layout.prop(my_settings, "export_directory")
         layout.separator()
     
     def execute(self, context):
-        self.export_at_origin(context)
+        self.export_at_origin(context, self.file_format)
         export_dir = context.scene.my_addon_props.export_directory
         return {"FINISHED"}
         
