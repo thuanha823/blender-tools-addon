@@ -7,7 +7,6 @@ scale_ui = 1.1
 # Fetch the internal text block and load it as a module (Testing in Blender)
 generalTool_module = bpy.data.texts["general_tools.py"].as_module()
 mirrorTool_module = bpy.data.texts["mirror_tool.py"].as_module()
-bevelTool_module = bpy.data.texts["Bevel_weight_by_Angle.py"].as_module()
 exportTool_module = bpy.data.texts["zero_export_tool.py"].as_module()
 
 
