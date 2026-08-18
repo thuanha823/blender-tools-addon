@@ -28,12 +28,9 @@ modules = [
     f"{__name__}.{module}"
     for module in [
         "addon_ui",
-        "mirror_tool",
-        "bevel_weight_by_Angle",
         "general_tools",
         "mirror_tool",
         "tool_index_assign_logic",
-        "zero_export_tool",
     ]
 ]
 

@@ -2,7 +2,10 @@ import bpy
 import bmesh
 import math
 import mathutils
-from bpy.props import EnumProperty
+import os
+from mathutils import Vector
+from bpy.props import BoolProperty, EnumProperty
+from bpy_extras.io_utils import ExportHelper
 
 
 class TOOL_OT_quick_collection(bpy.types.Operator):
@@ -351,12 +354,154 @@ class TOOL_OT_auto_bevel_weight(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=250)
     
 
+class TOOL_OT_export_origin(bpy.types.Operator):
+    """Export any object from the origin of scene while maintaining original position"""
+    
+    bl_label = "Export From Origin"
+    bl_idname = "scene.export_origin"
+    bl_options = {"UNDO"}
+    
+    file_format: EnumProperty(
+        name="Export File Format",
+        description="Choose what file type to export as",
+        items=[
+            ('FBX', "FBX", ""),  # noqa
+            ('GLB', "GLB", ""),  # noqa
+            ('OBJ', "OBJ", ""),  # noqa
+        ],
+    )
+    include_children: BoolProperty(
+        name="Include Childrens",
+        description="Select whether children objects will be exported alongside selected object",
+        default=True
+    )
+    
+    @classmethod
+    def poll(cls, context):
+        # Only available IF there is a selected Mesh object
+        sel_obj = context.selected_objects
+        if not sel_obj:
+            return False 
+        for obj in sel_obj:
+            if obj.type != 'MESH':
+                return False
+        
+        return True
+   
+    def export_at_origin(self, context, file_format="", include_children=True):
+        output_folder = context.scene.my_addon_props.export_directory
+        
+        # Warning if no directory is specified
+        if not output_folder:
+            self.report({'ERROR'}, "Please select an export directory")
+            return {'CANCELLED'}
+
+        # Ensure the output folder exists; create it if it doesn't
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+
+        # Get the currently selected objects in the Blender scene
+        raw_selection = context.selected_objects
+
+        # Check if there are any selected objects
+        if not raw_selection:
+            self.report({'WARNING'}, "No objects selected.")
+            return {'CANCELLED'}
+        
+        # Identify the root object
+        top_level_objects = [
+            obj for obj in raw_selection
+            if obj.parent not in raw_selection
+        ]
+        
+        # Save the original transformations of selected objects
+        original_transforms = {
+        obj: (
+            obj.location.copy(), 
+            obj.rotation_euler.copy(), 
+            obj.scale.copy()
+            ) 
+            for obj in top_level_objects
+        }
+
+        # Temporarily reset the transformations to the origin for export
+        for obj in top_level_objects:
+            obj.location = (0, 0, 0)
+            obj.rotation_euler = (0, 0, 0)
+            obj.scale = (1, 1, 1)
+
+            # Isolate object selection
+            for obj in top_level_objects:
+                bpy.ops.object.select_all(action='DESELECT')
+                obj.select_set(True)
+                
+                if include_children:
+                    for child in obj.children_recursive:
+                        child.select_set(True)
+
+                # Set the export file path using the object's name
+                export_file_path = os.path.join(output_folder, f"{obj.name}.{file_format.lower()}")
+
+                # Export setting
+                if file_format == "FBX":
+                    bpy.ops.export_scene.fbx(
+                        filepath = export_file_path,
+                        use_selection = True           
+                    )
+                
+                elif file_format == "GLB":
+                    bpy.ops.export_scene.gltf(
+                        filepath = export_file_path,
+                        use_selection = True,
+                        export_apply = True,
+                        export_animation_mode = "NLA_TRACKS"           
+                    )
+                    
+                elif file_format == "OBJ":
+                    bpy.ops.wm.obj_export(
+                        filepath = export_file_path,
+                        export_selected_objects = True           
+                    )
+                    
+                self.report({'INFO'}, f"Exported -{obj.name}- as {file_format}")
+
+            # Restore the original transformations of the objects
+            for obj, (location, rotation, scale) in original_transforms.items():
+                obj.location = location
+                obj.rotation_euler = rotation
+                obj.scale = scale
+            
+            # Reselect the original objects    
+            for obj in raw_selection:
+                obj.select_set(True)
+    
+    def draw(self, context):
+        layout = self.layout
+        row = layout.row()
+        row.label(text="File Type:")
+        layout.prop(self, "file_format", expand=True)
+        row.prop(self, "include_children", expand=True)
+        
+        my_settings = context.scene.my_addon_props
+        layout.prop(my_settings, "export_directory")
+        layout.separator()
+    
+    def execute(self, context):
+        self.export_at_origin(context, self.file_format, self.include_children)
+        export_dir = context.scene.my_addon_props.export_directory
+        return {"FINISHED"}
+        
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)           
+    
+
 classes = [
             TOOL_OT_quick_collection, 
             TOOL_OT_clean_up,
             TOOL_OT_custom_transform_orientation,
             TOOL_OT_delete_custom_orientation,
             TOOL_OT_auto_bevel_weight,
+            TOOL_OT_export_origin,
 ]
         
 def register():
