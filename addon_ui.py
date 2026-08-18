@@ -12,7 +12,7 @@ exportTool_module = bpy.data.texts["zero_export_tool.py"].as_module()
 
 
 class MyTool_Panel(bpy.types.Panel):
-    bl_label = "My Tools"
+    bl_label = "General"
     bl_idname = "mytool_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -21,7 +21,7 @@ class MyTool_Panel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         tool = layout.box()
-        tool.label(text="General Tools", icon='TOOL_SETTINGS')
+        tool.label(text="Workflow", icon='TOOL_SETTINGS')
         tool.operator("object.quick_collection", text="Quick Collection", icon='COLLECTION_NEW')
         tool.operator("object.quick_mirror", text="Quick Mirror", icon='MOD_MIRROR')
         tool.operator("object.auto_bevel_weight", text="Auto Bevel Weight", icon='EDGE_BEVEL')
@@ -30,6 +30,7 @@ class MyTool_Panel(bpy.types.Panel):
         
         tool.label(text="Clean Up", icon='BRUSH_DATA')
         tool.operator("scene.clean_up", text="File", icon='FILE_BACKUP').action = 'FILE'
+        tool.operator("scene.clean_up", text="Material", icon='NODE_MATERIAL').action = 'MATERIAL'
         tool_row = tool.row()
         tool_row.operator("scene.clean_up", text="Scene", icon='SCENE_DATA').action = 'SCENE'
         tool_row.operator("scene.clean_up", text="Data", icon='IMAGE_DATA').action = 'DATA'
@@ -39,17 +40,30 @@ class MyTool_Panel(bpy.types.Panel):
         tool.operator("scene.custom_orientation", text="New Orientation", icon='FILE_NEW')
         tool.operator("scene.delete_custom", text="Delete All Custom", icon='TRASH')
         
-        index_tool = layout.box()
-        index_tool.label(text="Index Assign", icon='PRESET_NEW')
-        row = index_tool.row()
-        row.operator("object.index_materials", icon='MATERIAL_DATA', text="Materials")
-        row.operator("object.index_objects", icon='OBJECT_DATAMODE', text="Objects")
-        index_tool.separator(type='LINE')
-        index_tool.operator("object.index_reset", icon='FILE_REFRESH', text="Reset Pass Index")
+        
          
+
+class MyTool_Panel_subA(bpy.types.Panel):
+        bl_label = "Rendering"
+        bl_idname = "mytool_panel_subA"
+        bl_space_type = 'VIEW_3D'
+        bl_region_type = 'UI'
+        bl_category = 'Personal Tools'
+        #bl_parent_id = "mytool_panel"
+        
+        def draw(self, context):
+            layout = self.layout
+            index_tool = layout.box()
+            index_tool.label(text="Index Assign", icon='PRESET_NEW')
+            row = index_tool.row()
+            row.operator("object.index_materials", icon='MATERIAL_DATA', text="Materials")
+            row.operator("object.index_objects", icon='OBJECT_DATAMODE', text="Objects")
+            index_tool.separator(type='LINE')
+            index_tool.operator("object.index_reset", icon='FILE_REFRESH', text="Reset Pass Index")
 
 classes = [
             MyTool_Panel,
+            MyTool_Panel_subA,
 ]
         
 def register():

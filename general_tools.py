@@ -45,21 +45,41 @@ class TOOL_OT_clean_up(bpy.types.Operator):
         name = "Cleanup Type",
         description = "Choose what to clean",
         items = [
-            ('FILE', "File", "Delete all objects and purge unused data"),
-            ('SCENE', "Scene", "Delete all scene objects"),
-            ('DATA', "Data", "Purge unused data only")
+            ('FILE', "File", "Wipe scene and unused data"),
+            ('SCENE', "Scene", "Delete all visible scene objects"),
+            ('DATA', "Data", "Delete unused data only"),
+            ('MATERIAL', "Material", "Delete all scene materials"),
         ]
     )      
     
-    def execute(self, context):
-        if self.action in {'FILE', 'SCENE'}:
+    def scene_clean_up(self, context, action):
+        # Force Object Mode before running
+        if context.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        
+        if action == 'FILE':
+            for obj in list(bpy.data.objects):
+                bpy.data.objects.remove(obj)
+            for col in list(bpy.data.collections):
+                bpy.data.collections.remove(col)
+                
+        if action == 'SCENE':
             bpy.ops.object.select_all(action='SELECT')
             bpy.ops.object.delete()
             
-        if self.action in {'FILE', 'DATA'}:
+        if action in {'FILE', 'DATA'}:
             bpy.ops.outliner.orphans_purge(do_recursive=True)
             
-        self.report({'INFO'}, f"Performed cleanup: {self.action}")
+        if action == 'MATERIAL':
+            for mat in list(bpy.data.materials):
+                bpy.data.materials.remove(mat)
+            
+        self.report({'INFO'}, f"Performed cleanup: {action}")
+            
+        
+    def execute(self, context):
+        self.scene_clean_up(context, self.action)
+    
         return {'FINISHED'} 
     
 
