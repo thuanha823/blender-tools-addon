@@ -3,11 +3,11 @@ import bmesh
 from bpy.props import EnumProperty
 
 scale_ui = 1.1
-
+'''
 # Fetch the internal text block and load it as a module (Testing in Blender)
 generalTool_module = bpy.data.texts["general_tools.py"].as_module()
 mirrorTool_module = bpy.data.texts["mirror_tool.py"].as_module()
-
+'''
 
 class MyTool_Panel(bpy.types.Panel):
     bl_label = "General"
