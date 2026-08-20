@@ -2,10 +2,6 @@ import bpy
 import bmesh
 from bpy.props import EnumProperty
 
-# Fetch the internal text block and load it as a module (Testing in Blender)
-generalTool_module = bpy.data.texts["tool_general.py"].as_module()
-mirrorTool_module = bpy.data.texts["tool_mirror_tool.py"].as_module()
-
 
 class MyTool_Panel(bpy.types.Panel):
     bl_label = "General"
@@ -26,19 +22,20 @@ class MyTool_Panel(bpy.types.Panel):
         
         tool.label(text="Clean Up Resources", icon='BRUSH_DATA')
         tool.operator("scene.clean_up", text="Wipe Scene", icon='FILE_BACKUP').action = 'FILE'
-        tool.operator("scene.clean_up", text="Wipe All Material", icon='NODE_MATERIAL').action = 'MATERIAL'
+        tool.operator("scene.clean_up", text="Clear Viewport", icon='SCENE_DATA').action = 'SCENE'
         tool_row = tool.row()
-        tool_row.operator("scene.clean_up", text="Clear Viewport", icon='SCENE_DATA').action = 'SCENE'
+        tool_row.operator("scene.clean_up", text="Wipe All Material", icon='NODE_MATERIAL').action = 'MATERIAL'
         tool_row.operator("scene.clean_up", text="Purge Data", icon='IMAGE_DATA').action = 'DATA'
         
         tool.label(text="Group Similar Materials", icon='BRUSH_DATA')
-        tool.operator("scene.material_cleanup", text="Scene", icon='NODE_MATERIAL').selection_mode = 'SCENE'
-        tool.operator("scene.material_cleanup", text="Selected", icon='NODE_MATERIAL').selection_mode = 'SELECTED'
+        tool.operator("scene.material_cleanup", text="Rename - All", icon='NODE_MATERIAL').selection_mode = 'SCENE'
+        tool.operator("scene.material_cleanup", text="Rename - Selected Objects", icon='NODE_MATERIAL').selection_mode = 'SELECTED'
         
         tool.separator(type='LINE')
         tool.label(text="Custom Orientation", icon='ORIENTATION_GIMBAL')
-        tool.operator("scene.custom_orientation", text="New Orientation", icon='FILE_NEW')
-        tool.operator("scene.delete_custom", text="Delete All Custom", icon='TRASH')        
+        tool_orient = tool.row()
+        tool_orient.operator("scene.custom_orientation", text="New", icon='FILE_NEW')
+        tool_orient.operator("scene.delete_custom", text="Delete Custom", icon='TRASH')        
          
 
 class MyTool_Panel_subA(bpy.types.Panel):
