@@ -4,7 +4,7 @@ import math
 import mathutils
 import os
 from mathutils import Vector
-from bpy.props import BoolProperty, EnumProperty
+from bpy.props import BoolProperty, StringProperty, EnumProperty, FloatProperty
 from bpy_extras.io_utils import ExportHelper
 
 
@@ -355,7 +355,7 @@ class TOOL_OT_auto_bevel_weight(bpy.types.Operator):
     
 
 class TOOL_OT_export_origin(bpy.types.Operator):
-    """Export any object from the origin of scene while maintaining original position"""
+    """Center object to scene origin and export while maintaining original position"""
     
     bl_label = "Export From Origin"
     bl_idname = "scene.export_origin"
@@ -494,6 +494,69 @@ class TOOL_OT_export_origin(bpy.types.Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)           
     
+    
+class TOOL_OT_material_cleanup(bpy.types.Operator):
+    """Consolidate materials. Combine similar materials and remove number suffix."""
+    
+    bl_idname = "scene.material_cleanup"
+    bl_label = "Material Clean Up"
+    bl_description = "Flatten materials name and remove number suffix"
+    bl_options = {'UNDO'}
+    
+    selection_mode: bpy.props.EnumProperty(
+        name="Selection Mode",
+        description="Choose what will be affected by the tool",
+        items=[
+            ('SCENE', 'All', 'Clean up all objects in scene'),
+            ('SELECTED', 'Selected', 'Clean up only selected objects in scene')
+        ]
+    )
+        
+    def material_cleanup(self, context, selection_mode):
+        total_replacements = 0
+        total_renamed = 0
+        
+        # Choose what will be affected
+        if selection_mode == 'SCENE':
+            objects_to_process = context.scene.objects
+        elif selection_mode == 'SELECTED':
+            objects_to_process = context.selected_objects
+        else:
+            self.report({'ERROR'}, "Invalid mode")
+            return 
+        
+        for obj in objects_to_process:
+            if obj.type != 'MESH' or not obj.material_slots:
+                continue
+            
+            # Check if slot is empty
+            for slot in obj.material_slots:
+                if not slot.material:
+                    continue
+                current_mat_name = slot.material.name
+                
+                split_str = current_mat_name.rsplit(".", 1)
+                
+                # Split string into text and suffix, and check if suffix is a number
+                if len(split_str) > 1 and split_str[-1].isdigit():
+                    base_mat_name = split_str[0]
+                    base_material = bpy.data.materials.get(base_mat_name)
+                    
+                    # Only replace if base material exist in file
+                    if base_material:
+                        slot.material = base_material
+                        total_replacements += 1
+                    else:
+                        slot.material.name = base_mat_name
+                        total_renamed += 1
+        
+        self.report({'INFO'}, f"{total_replacements} materials replaced. {total_renamed} materials renamed.")
+
+    def execute(self, context):
+        self.material_cleanup(context, self.selection_mode)
+  
+        return{'FINISHED'}
+    
 
 classes = [
             TOOL_OT_quick_collection, 
@@ -502,6 +565,7 @@ classes = [
             TOOL_OT_delete_custom_orientation,
             TOOL_OT_auto_bevel_weight,
             TOOL_OT_export_origin,
+            TOOL_OT_material_cleanup,
 ]
         
 def register():

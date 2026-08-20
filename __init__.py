@@ -28,9 +28,9 @@ modules = [
     f"{__name__}.{module}"
     for module in [
         "addon_ui",
-        "general_tools",
-        "mirror_tool",
-        "tool_index_assign_logic",
+        "tool_general",
+        "tool_mirror_tool",
+        "tool_index_assign",
     ]
 ]
 
