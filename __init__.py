@@ -6,7 +6,7 @@ from bpy.props import StringProperty, PointerProperty
 bl_info = {
     "name": "Thuan Blender Addon",
     "author": "Thuan Ha",
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     "blender": (5, 2, 0),
     "location": "View3D > UI",
     "description": "Custom tools for workflow and convenience",
@@ -29,8 +29,8 @@ modules = [
     for module in [
         "addon_ui",
         "tool_general",
-        "tool_mirror_tool",
         "tool_index_assign",
+        "tool_quick_mirror",
     ]
 ]
 
